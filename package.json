@@ -1,0 +1,38 @@
+{
+  "name": "iss-enterprise",
+  "version": "1.0.0",
+  "description": "Universal Multi-Agent Scaffolding Engine & Tactical CLI. Auto-detects heterogeneous stacks (Python RAG, Astro SSG, Go, Monorepos), supports mixed model fleets (Claude, DeepSeek, Qwen, Gemini, OpenAI, Ollama), compacts skills, and scaffolds projects with deterministic model hooks.",
+  "main": "src/cli.js",
+  "type": "module",
+  "bin": {
+    "iss": "./bin/iss.js"
+  },
+  "scripts": {
+    "start": "node ./bin/iss.js",
+    "inspect": "node ./bin/iss.js inspect",
+    "test": "node ./test/suite.js"
+  },
+  "keywords": [
+    "ai-agents",
+    "multi-agent",
+    "cli",
+    "scaffolding",
+    "star-trek",
+    "iss-enterprise",
+    "claude",
+    "deepseek",
+    "qwen",
+    "gemini",
+    "ollama",
+    "model-hooks",
+    "knowledge-graph",
+    "rag",
+    "astro",
+    "monorepo"
+  ],
+  "author": "Favio Cesar Juan <faviocjuan@gmail.com>",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
