@@ -226,17 +226,19 @@ runTest('Scaffolder & Generator: End-to-end greenfield creation with live hooks 
   }, fleet, mcpPlan);
 
   assert.ok(fs.existsSync(path.join(testProjectDir, '.agents/hooks.json')));
-  assert.ok(fs.existsSync(path.join(testProjectDir, '.agents/hooks/worf-security-shield.js')));
+  assert.ok(fs.existsSync(path.join(testProjectDir, '.agents/hooks/tasha-security-shield.js')));
   assert.ok(fs.existsSync(path.join(testProjectDir, '.agents/hooks/crusher-health-check.js')));
   assert.ok(fs.existsSync(path.join(testProjectDir, '.agents/hooks/captains-log-writer.js')));
   
   const agentsMd = fs.readFileSync(path.join(testProjectDir, 'Agents.md'), 'utf-8');
   assert.ok(agentsMd.includes('Mapeo Estructural y Jerarquía de Carpetas'));
   assert.ok(agentsMd.includes('Atomic Design UI'));
+  assert.ok(agentsMd.includes('Lt. Tasha Yar'));
 
   // Test hook execution via node
-  const worfOutput = execSync(`node ${path.join(testProjectDir, '.agents/hooks/worf-security-shield.js')} --test`, { encoding: 'utf-8' });
-  assert.ok(worfOutput.includes('Tactical shield online'));
+  const tashaOutput = execSync(`node ${path.join(testProjectDir, '.agents/hooks/tasha-security-shield.js')} --test`, { encoding: 'utf-8' });
+  assert.ok(tashaOutput.includes('Tactical shield online'));
+  assert.ok(tashaOutput.includes('TASHA YAR'));
 
   const crusherOutput = execSync(`node ${path.join(testProjectDir, '.agents/hooks/crusher-health-check.js')} --test`, { encoding: 'utf-8' });
   assert.ok(crusherOutput.includes('Health check online'));

@@ -252,13 +252,13 @@ export function getTailoredQuestions(detectedProfile) {
     ]
   });
 
-  // Question 6: Shields rigidity (Worf Security)
+  // Question 6: Shields rigidity (Tasha Yar Security)
   questions.push({
     id: 'shield_rigidity',
-    title: '🛡️ ¿Qué nivel de rigidez de escudos tácticos (Worf) deseas activar?',
+    title: '🛡️ ¿Qué nivel de rigidez de escudos tácticos (Tasha Yar) deseas activar?',
     options: [
       'Standard Starfleet (Moderado): Bloquea comandos destructivos y audita tipos/linters [Recomendado]',
-      'Red Alert (Paranoico): Intercepta comandos, bloquea installs sin auditor de Worf, Strix activo',
+      'Red Alert (Paranoico): Intercepta comandos, bloquea installs sin auditor de Tasha Yar, escudos reforzados',
       'Warp Speed (Ágil): Modo advertencia informativo sin bloqueos físicos',
       '[Otra / Personalizada]'
     ]
@@ -270,7 +270,7 @@ export function getTailoredQuestions(detectedProfile) {
     title: '🎭 ¿Qué estilo de identidad deseas para la tripulación?',
     options: [
       'Híbrido: Star Trek TNG con subtítulo corporativo formal [Recomendado]',
-      'Star Trek TNG Nativo: Inmersión temática completa (Picard, Data, Worf, etc.)',
+      'Star Trek TNG Nativo: Inmersión temática completa (Picard, Data, Tasha Yar, etc.)',
       'Corporativo Formal: Títulos enterprise puros (StrategicOrchestrator, SecurityGuardrail)',
       '[Otra / Personalizada]'
     ]

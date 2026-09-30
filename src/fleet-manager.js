@@ -110,12 +110,12 @@ export function allocateFleet(availableModels = [], dominantProvider = 'anthropi
       contextBudget: getContextBudget(highReasoningModel),
       purpose: 'Architecture lead, monorepo boundaries, Docker, mentorship'
     },
-    'Lt. Cmdr. Worf (Security Guardrail)': {
+    'Lt. Tasha Yar (Security Guardrail)': {
       nature: 'AI_AGENT',
       model: highReasoningModel,
       fallbackModel: fastEconomyModel,
       contextBudget: getContextBudget(highReasoningModel),
-      purpose: 'Security shields, input sanitization, Semgrep, Strix Red Team'
+      purpose: 'Tactical security shields, input sanitization, Semgrep, defensive perimeter'
     },
     'Counselor Deanna Troi (Design & UX)': {
       nature: 'AI_AGENT',

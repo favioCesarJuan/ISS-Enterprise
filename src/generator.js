@@ -49,10 +49,10 @@ export function generateGovernanceArchitecture(targetDir, profile = {}, fleetPla
     hooks: [
       {
         event: 'preToolUse',
-        name: 'worf-security-shield',
-        path: './.agents/hooks/worf-security-shield.js',
+        name: 'tasha-security-shield',
+        path: './.agents/hooks/tasha-security-shield.js',
         timeout: 3000,
-        description: 'Tactical security perimeter guardrail.'
+        description: 'Tactical security perimeter guardrail orchestrated by Lt. Tasha Yar.'
       },
       {
         event: 'postInvocation',
@@ -73,19 +73,19 @@ export function generateGovernanceArchitecture(targetDir, profile = {}, fleetPla
 
   writeFile('.agents/hooks/package.json', JSON.stringify({ type: 'module' }, null, 2));
 
-  // 2. Worf Security Shield
-  writeFile('.agents/hooks/worf-security-shield.js', `#!/usr/bin/env node
+  // 2. Tasha Yar Tactical Security Shield
+  writeFile('.agents/hooks/tasha-security-shield.js', `#!/usr/bin/env node
 import process from 'node:process';
 const PROHIBITED = [/\\brm\\s+-[rR]f\\s+[\\/\\*]/, /\\bcurl\\b.*\\|\\s*(ba)?sh\\b/, /\\bchmod\\s+(-R\\s+)?777\\b/];
 export function evaluateSecurity(payload = {}) {
   const cmd = payload.args?.CommandLine || payload.args?.command || '';
   for (const p of PROHIBITED) {
-    if (p.test(cmd)) return { allowed: false, reason: '🚨 [WORF]: Prohibited command detected.' };
+    if (p.test(cmd)) return { allowed: false, reason: '🚨 [TASHA YAR]: Prohibited command detected.' };
   }
   return { allowed: true };
 }
 if (process.argv.includes('--test')) {
-  console.log('🛡️  [WORF]: Tactical shield online.');
+  console.log('🛡️  [TASHA YAR]: Tactical shield online.');
   process.exit(0);
 }
 `);
@@ -181,7 +181,7 @@ Enforces high standards of architecture, security, and verification for ${projec
 | **William T. Riker** | Lead AI Orchestrator | ${fleetPlan.officerRoster?.['William T. Riker (First Officer)']?.model || 'High-Reasoning'} | Task coordination, subagent dispatch |
 | **Data** | Systems & Logic | ${fleetPlan.officerRoster?.['Lt. Cmdr. Data (Systems & Logic)']?.model || 'High-Reasoning'} | Formal algorithms, state machines, RAG |
 | **Geordi La Forge** | Architecture Lead | ${fleetPlan.officerRoster?.['Lt. Cmdr. Geordi La Forge (Engineering)']?.model || 'High-Reasoning'} | Monorepo/package layout, clean interfaces |
-| **Worf** | Security Guardrail | ${fleetPlan.officerRoster?.['Lt. Cmdr. Worf (Security Guardrail)']?.model || 'High-Reasoning'} | Defense perimeter, dependency audits |
+| **Lt. Tasha Yar** | Security Guardrail | ${fleetPlan.officerRoster?.['Lt. Tasha Yar (Security Guardrail)']?.model || 'High-Reasoning'} | Tactical defense perimeter, dependency audits |
 ${isHeadless ? '' : `| **Deanna Troi** | Design & UX | ${fleetPlan.officerRoster?.['Counselor Deanna Troi (Design & UX)']?.model || 'High-Reasoning'} | UI tokens, accessibility, ${styling} |\\n`}
 | **Beverly Crusher** | Health & Quality | ${fleetPlan.officerRoster?.['Dr. Beverly Crusher (Health & Quality)']?.model || 'High-Reasoning'} | Ponytail minimalism, compiler hygiene |
 | **Wesley Crusher** | Automation Runner | ${fleetPlan.officerRoster?.['Ensign Wesley Crusher (Automation Runner)']?.model || 'Fast-Economy'} | Fast test execution, linters, scripts |

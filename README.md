@@ -42,7 +42,7 @@ Adapts styling rules to the project's actual architecture:
 
 ### 5. 🗜️ Dynamic Skill Engine & Anti-Collision Compactor
 Prevents instruction bloat and prompt collisions by compacting unlimited raw skills into 6 canonical pillars:
-1. `security-guardrails` (Lt. Cmdr. Worf: Semgrep, OWASP Top 10, Strix Red Team)
+1. `security-guardrails` (Lt. Tasha Yar: Semgrep, OWASP Top 10, Strix Red Team, Command Shields)
 2. `design-system-and-ui` (Counselor Troi: WCAG AAA, UI tokens, CSS/Tailwind governance)
 3. `code-health-and-ponytail` (Dr. Crusher: Ponytail protocol, YAGNI, zero-polling)
 4. `fullstack-architecture` (Lt. Cmdr. Geordi: Monorepos, DDD, Hexagonal boundaries)
@@ -109,7 +109,7 @@ npx iss-enterprise mcps
 | **Commander William T. Riker** | Lead AI Orchestrator | Task planning, subagent delegation, TDD execution |
 | **Lt. Cmdr. Data** | Systems & Logic | Algorithms, RAG pipelines, state machines, formal logic |
 | **Lt. Cmdr. Geordi La Forge** | Chief Engineer | Monorepo packages, build performance, Docker |
-| **Lt. Cmdr. Worf** | Tactical Security | Security shields, Semgrep static analysis, command intercept |
+| **Lt. Tasha Yar** | Tactical Security | Security shields, Semgrep static analysis, command intercept |
 | **Counselor Deanna Troi** | Design & UX | Design systems, WCAG AAA accessibility, styling hygiene |
 | **Dr. Beverly Crusher** | Health & Quality | Ponytail protocol (YAGNI, minimal diffs), no-polling hook |
 | **Ensign Wesley Crusher** | Automation Runner | Fast scripts, test execution (Vitest, Pytest, Playwright) |

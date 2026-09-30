@@ -42,7 +42,7 @@ Adapta las directivas de estilos a la arquitectura real del proyecto:
 
 ### 5. 🗜️ Motor de Skills Dinámico y Compactador Anticolisiones
 Evita la saturación de contexto y colisiones de instrucciones fusionando cualquier cantidad de skills en 6 pilares canónicos:
-1. `security-guardrails` (Worf: Semgrep, OWASP Top 10, Strix Red Team)
+1. `security-guardrails` (Tasha Yar: Semgrep, OWASP Top 10, Strix Red Team, Escudos de Comandos)
 2. `design-system-and-ui` (Troi: WCAG AAA, tokens de diseño, CSS/Tailwind)
 3. `code-health-and-ponytail` (Dra. Crusher: Protocolo Ponytail, YAGNI, prohibición de polling)
 4. `fullstack-architecture` (Geordi: Monorepos, DDD, límites hexagonales)
@@ -109,7 +109,7 @@ npx iss-enterprise mcps
 | **Comandante William T. Riker** | Orquestador Principal de IA | Planificación de tareas, despacho de subagentes, TDD |
 | **Tte. Cmdte. Data** | Lógica y Sistemas | Algoritmos, pipelines RAG, máquinas de estado, lógica formal |
 | **Tte. Cmdte. Geordi La Forge** | Jefe de Ingeniería | Paquetes de monorepo, rendimiento de compilación, Docker |
-| **Tte. Cmdte. Worf** | Seguridad Táctica | Escudos perimétricos, análisis estático Semgrep, bloqueo de comandos |
+| **Teniente Tasha Yar** | Seguridad Táctica | Escudos perimétricos, análisis estático Semgrep, bloqueo de comandos |
 | **Consejera Deanna Troi** | Diseño y Ergonomía UX | Sistema de diseño, accesibilidad WCAG AAA, higiene de UI |
 | **Dra. Beverly Crusher** | Salud Médica del Código | Protocolo Ponytail (YAGNI, diffs mínimos), bloqueo de polling continuo |
 | **Alférez Wesley Crusher** | Automatización Rápida | Scripts veloces, ejecución de tests (Vitest, Pytest, Playwright) |

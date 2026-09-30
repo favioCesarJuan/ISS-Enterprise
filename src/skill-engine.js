@@ -89,7 +89,7 @@ ${description || `Specialized operational instructions for ${name}.`}
 ## 📋 Directives & Best Practices
 1. **YAGNI & Minimalism**: Ascend the Ponytail ladder. Do not over-engineer.
 2. **Quality & Verification**: Every change must be validated by automated tests.
-3. **Security Shield**: Respect Worf's security perimeter rules.
+3. **Security Shield**: Respect Lt. Tasha Yar's security perimeter rules.
 `;
 
   return { name: slug, content };
