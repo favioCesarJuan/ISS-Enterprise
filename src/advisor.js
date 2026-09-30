@@ -5,6 +5,7 @@
  * Formulates tailored questions with guaranteed [Otra / Custom] write-ins.
  * When a custom choice is made, runs heuristic investigation to infer optimal
  * file distribution, linters, compiler flags, and architecture patterns.
+ * Suggests the optimal folder structure according to the detected technology.
  * ==============================================================================
  */
 
@@ -53,12 +54,33 @@ const TECH_KNOWLEDGE_BASE = {
     reactiveModel: 'Fine-grained Signals',
     styling: 'Tailwind or CSS Modules',
     fileLayout: 'src/components, src/stores, src/routes'
+  },
+  flutter: {
+    framework: 'Flutter',
+    language: 'Dart',
+    recommendedArch: 'Clean Architecture con BLoC o Riverpod',
+    fileLayout: 'lib/core, lib/features (data, domain, presentation), lib/widgets'
+  },
+  remix: {
+    framework: 'Remix / React Router v7',
+    recommendedArch: 'Flat Routes + Co-located Components',
+    fileLayout: 'app/routes, app/components, app/services, app/styles'
+  },
+  nextjs: {
+    framework: 'Next.js App Router',
+    recommendedArch: 'Server Components + Client Leaves',
+    fileLayout: 'app/(auth), app/(dashboard), components/ui, lib/, hooks/'
+  },
+  astro: {
+    framework: 'Astro',
+    recommendedArch: 'Islands Architecture & Atomic Design',
+    fileLayout: 'src/components/atoms, src/components/molecules, src/components/organisms, src/layouts, src/pages, src/styles'
   }
 };
 
 /**
  * Investigates an "Otra" / custom input dynamically.
- * @param {string} category 'stack' | 'arch' | 'styling' | 'linter' | 'layout'
+ * @param {string} category 'stack' | 'arch' | 'styling' | 'linter' | 'file_distribution'
  * @param {string} userInput
  * @returns {object} Inferred recommendations and configurations
  */
@@ -92,13 +114,15 @@ export function investigateCustomChoice(category, userInput = '') {
 }
 
 /**
- * Returns the interactive questions tailored to the detected archetype.
+ * Returns the interactive questions tailored to the detected archetype and stack.
+ * Dynamically prioritizes the optimal folder structure recommendation.
  * @param {object} detectedProfile
  * @returns {Array<object>} List of structured questions
  */
 export function getTailoredQuestions(detectedProfile) {
   const isGreenfield = detectedProfile.archetype === 'GREENFIELD_EMPTY';
-  const hasFrontend = detectedProfile.techStack?.hasNext || detectedProfile.techStack?.hasAstro || detectedProfile.techStack?.hasExpo;
+  const stack = detectedProfile.techStack || {};
+  const hasFrontend = stack.hasNext || stack.hasAstro || stack.hasExpo;
 
   const questions = [];
 
@@ -109,9 +133,9 @@ export function getTailoredQuestions(detectedProfile) {
       title: '🛸 ¿Qué tipo de nave espacial deseas forjar desde cero?',
       options: [
         'SaaS Fullstack (Monorepo con Web + Mobile + API)',
+        'Portal de Contenidos / Blog / SSG con Atomic Design (Astro)',
         'Backend / Microservicio API (Go, FastAPI, NestJS, Rust)',
         'Pipeline de Datos / Scraper / RAG (Python, Vector DB, Docker)',
-        'Portal de Contenidos / Blog / SSG (Astro, Markdown/MDX)',
         'Aplicación Móvil (React Native / Expo, Flutter)',
         'Herramienta CLI / Scripting Autónomo',
         '[Otra / Personalizada]'
@@ -134,18 +158,67 @@ export function getTailoredQuestions(detectedProfile) {
     ]
   });
 
-  // Question 3: Directory layout / File distribution
+  // Question 3: Directory layout / File distribution (Intelligently ordered by stack!)
+  const distributionOptions = [];
+
+  if (stack.hasAstro) {
+    // Astro specializes in Atomic Design UI
+    distributionOptions.push('Atomic Design UI (src/components/atoms, molecules, organisms, layouts, pages) [⭐ Recomendado para Astro y Design Systems]');
+    distributionOptions.push('Modular Estándar (src/components, src/services, src/utils, src/routes)');
+    distributionOptions.push('Vertical Slice / Feature-Driven (features/explore, features/missions, etc.)');
+  } else if (stack.hasNext && !stack.hasTurbo) {
+    // Next.js App Router
+    distributionOptions.push('Next.js App Router Estándar (app/(routes), components/ui, lib/, hooks/) [⭐ Recomendado para Next.js]');
+    distributionOptions.push('Atomic Design UI (components/atoms, molecules, organisms, templates) [⭐ Ideal si usas Design System]');
+    distributionOptions.push('Vertical Slice / Feature-Driven (features/auth, features/billing con componentes locales)');
+  } else if (stack.hasTurbo || stack.hasPnpmWorkspace) {
+    // Monorepos
+    distributionOptions.push('Monorepo Packages (apps/web, apps/mobile, apps/api, packages/ui, packages/core) [⭐ Recomendado para Monorepos]');
+    distributionOptions.push('Monorepo + Atomic Design (apps/* + packages/ui/src/atoms, molecules, organisms)');
+    distributionOptions.push('Vertical Slice Monorepo (apps/* + features/*)');
+  } else if (detectedProfile.archetype === 'DATA_PIPELINE_RAG') {
+    // Data & RAG
+    distributionOptions.push('Data Vault & Pipelines (ingest/, processing/, storage/, models/, vault/, tests/) [⭐ Recomendado para RAG y Datos]');
+    distributionOptions.push('Capas Hexagonales (domain/, application/, infrastructure/, adapters/)');
+    distributionOptions.push('Modular Estándar (scripts/, data/, models/, utils/)');
+  } else if (detectedProfile.archetype === 'BACKEND_API_ONLY' || stack.hasGo || stack.hasRust) {
+    // APIs and Backend
+    distributionOptions.push('Capas Hexagonales (domain/, application/, infrastructure/, adapters/) [⭐ Recomendado para APIs y DDD]');
+    distributionOptions.push('Vertical Slice Architecture (features/users, features/billing agrupando handlers y db)');
+    distributionOptions.push('Modular Estándar Plano (controllers/, services/, models/, routes/)');
+  } else {
+    // General fallback
+    distributionOptions.push('Atomic Design UI (src/components/atoms, molecules, organisms, layouts, pages) [⭐ Recomendado para UI y Design Systems]');
+    distributionOptions.push('Vertical Slice / Feature-Driven (features/auth, features/dashboard con sus propios componentes)');
+    distributionOptions.push('Capas Hexagonales (domain/, application/, infrastructure/, adapters/)');
+    distributionOptions.push('Modular Estándar (src/components, src/services, src/utils, src/routes)');
+    distributionOptions.push('Monorepo Packages (apps/*, packages/* con Turborepo o pnpm)');
+  }
+
+  // Ensure all major patterns are present if not already added
+  const standardPool = [
+    'Atomic Design UI (src/components/atoms, molecules, organisms, layouts, pages)',
+    'Vertical Slice / Feature-Driven (features/auth, features/billing con componentes locales)',
+    'Capas Hexagonales (domain/, application/, infrastructure/, adapters/)',
+    'Next.js App Router Estándar (app/(routes), components/ui, lib/, hooks/)',
+    'Data Vault & Pipelines (ingest/, processing/, storage/, models/, vault/)',
+    'Modular Estándar Plano (src/components, src/services, src/utils, src/routes)'
+  ];
+
+  for (const std of standardPool) {
+    const baseName = std.split(' ')[0];
+    if (!distributionOptions.some(opt => opt.includes(baseName))) {
+      distributionOptions.push(std);
+    }
+  }
+
+  // Guaranteed [Otra / Personalizada] option!
+  distributionOptions.push('[Otra / Personalizada]');
+
   questions.push({
     id: 'file_distribution',
-    title: '📂 ¿Cómo prefieres distribuir y estructurar los archivos?',
-    options: [
-      'Monorepo Packages (apps/*, packages/* con Turborepo o pnpm)',
-      'Vertical Slice (features/billing, features/auth, features/dashboard)',
-      'Capas Hexagonales (domain/, application/, infrastructure/, adapters/)',
-      'Modular Estándar (src/components, src/services, src/utils, src/routes)',
-      'Data Vault & Pipelines (ingest/, processing/, storage/, models/, vault/)',
-      '[Otra / Personalizada]'
-    ]
+    title: '📂 ¿Cómo prefieres distribuir y estructurar las carpetas del proyecto?',
+    options: distributionOptions
   });
 
   // Question 4: Styling strategy (Adaptive: Never hardcode a universal ban!)

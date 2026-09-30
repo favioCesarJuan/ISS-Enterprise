@@ -9,7 +9,8 @@
  * 4. Adaptive styling governance (Tailwind permitted vs strict forbidden vs headless)
  * 5. Dynamic skill compaction & canonical domain fusion
  * 6. Indispensable MCP Triad configuration
- * 7. Greenfield project scaffolding and deterministic hook execution
+ * 7. Intelligent Folder Structure suggestions (Atomic Design for Astro, App Router, Hexagonal)
+ * 8. Greenfield project scaffolding and deterministic hook execution
  * ==============================================================================
  */
 
@@ -166,21 +167,52 @@ runTest('McpEngine: Replaces heavy GitHub MCP with lightweight gh CLI skill on s
 });
 
 // -----------------------------------------------------------------------------
-// Test 6: Greenfield Scaffolding & End-to-End Governance Generation
+// Test 6: Intelligent Folder Distribution Suggestions (Atomic Design, etc.)
+// -----------------------------------------------------------------------------
+runTest('Advisor: Prioritizes Atomic Design UI recommendation for Astro stacks', () => {
+  const questions = getTailoredQuestions({
+    archetype: ARCHETYPES.CONTENT_SSG_PORTAL,
+    techStack: { hasAstro: true }
+  });
+  const distQ = questions.find(q => q.id === 'file_distribution');
+  assert.ok(distQ, 'file_distribution question must exist');
+  assert.ok(distQ.options[0].includes('Atomic Design UI'), 'Atomic Design must be option #1 for Astro');
+  assert.ok(distQ.options.includes('[Otra / Personalizada]'), 'Guaranteed [Otra] option must exist');
+});
+
+runTest('Advisor: Prioritizes Hexagonal Layers recommendation for Backend APIs', () => {
+  const questions = getTailoredQuestions({
+    archetype: ARCHETYPES.BACKEND_API_ONLY,
+    techStack: { hasGo: true }
+  });
+  const distQ = questions.find(q => q.id === 'file_distribution');
+  assert.ok(distQ.options[0].includes('Capas Hexagonales'), 'Hexagonal must be option #1 for Go backend');
+});
+
+// -----------------------------------------------------------------------------
+// Test 7: Greenfield Scaffolding & End-to-End Governance Generation with Atomic Design
 // -----------------------------------------------------------------------------
 const tmpBase = path.resolve('/home/favio/Mis-proyectos/ISS-Enterprise/.tmp-test-run');
 
-runTest('Scaffolder & Generator: End-to-end greenfield creation with live hooks', () => {
+runTest('Scaffolder & Generator: End-to-end greenfield creation with live hooks and Atomic Design', () => {
   if (fs.existsSync(tmpBase)) {
     fs.rmSync(tmpBase, { recursive: true, force: true });
   }
   fs.mkdirSync(tmpBase, { recursive: true });
 
   const testProjectDir = path.join(tmpBase, 'uss-defiant');
-  scaffoldGreenfield(testProjectDir, { archetype: 'astro-portal', projectName: 'uss-defiant' });
+  scaffoldGreenfield(testProjectDir, {
+    archetype: 'astro-portal',
+    distribution: 'Atomic Design UI',
+    projectName: 'uss-defiant'
+  });
 
-  assert.ok(fs.existsSync(path.join(testProjectDir, 'astro.config.mjs')));
-  assert.ok(fs.existsSync(path.join(testProjectDir, 'package.json')));
+  // Verify physical Atomic Design directories
+  assert.ok(fs.existsSync(path.join(testProjectDir, 'src/components/atoms')));
+  assert.ok(fs.existsSync(path.join(testProjectDir, 'src/components/molecules')));
+  assert.ok(fs.existsSync(path.join(testProjectDir, 'src/components/organisms')));
+  assert.ok(fs.existsSync(path.join(testProjectDir, 'src/layouts')));
+  assert.ok(fs.existsSync(path.join(testProjectDir, 'src/pages')));
 
   const profile = detectProject(testProjectDir);
   const fleet = allocateCrewToFleet(['gemini']);
@@ -189,6 +221,7 @@ runTest('Scaffolder & Generator: End-to-end greenfield creation with live hooks'
   const created = generateGovernanceArchitecture(testProjectDir, {
     archetype: profile.archetype,
     techStack: profile.techStack,
+    file_distribution: 'Atomic Design UI (src/components/atoms, molecules, organisms, layouts, pages)',
     styling_strategy: 'MIXED_CSS_TAILWIND'
   }, fleet, mcpPlan);
 
@@ -196,8 +229,10 @@ runTest('Scaffolder & Generator: End-to-end greenfield creation with live hooks'
   assert.ok(fs.existsSync(path.join(testProjectDir, '.agents/hooks/worf-security-shield.js')));
   assert.ok(fs.existsSync(path.join(testProjectDir, '.agents/hooks/crusher-health-check.js')));
   assert.ok(fs.existsSync(path.join(testProjectDir, '.agents/hooks/captains-log-writer.js')));
-  assert.ok(fs.existsSync(path.join(testProjectDir, 'Agents.md')));
-  assert.ok(fs.existsSync(path.join(testProjectDir, 'config/models.config.json')));
+  
+  const agentsMd = fs.readFileSync(path.join(testProjectDir, 'Agents.md'), 'utf-8');
+  assert.ok(agentsMd.includes('Mapeo Estructural y Jerarquía de Carpetas'));
+  assert.ok(agentsMd.includes('Atomic Design UI'));
 
   // Test hook execution via node
   const worfOutput = execSync(`node ${path.join(testProjectDir, '.agents/hooks/worf-security-shield.js')} --test`, { encoding: 'utf-8' });

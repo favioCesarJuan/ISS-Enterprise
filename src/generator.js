@@ -38,7 +38,8 @@ export function generateGovernanceArchitecture(targetDir, profile = {}, fleetPla
 
   const projectName = path.basename(root);
   const styling = profile.styling_strategy || profile.stylingStrategy || 'MIXED_CSS_TAILWIND';
-  const allowTailwind = /tailwind|mixed/i.test(styling);
+  const distribution = profile.file_distribution || profile.fileDistribution || 'Atomic Design UI (src/components/atoms, molecules, organisms, layouts, pages)';
+  const allowTailwind = /tailwind|mixed|nativewind/i.test(styling);
 
   // 1. Hooks Configuration
   writeFile('.agents/hooks.json', JSON.stringify({
@@ -160,7 +161,7 @@ Enforces high standards of architecture, security, and verification for ${projec
 `);
   }
 
-  // 7. Agents.md (Tailored Crew Roster)
+  // 7. Agents.md (Tailored Crew Roster & Folder Hierarchy)
   const isHeadless = profile.archetype === 'DATA_PIPELINE_RAG' || profile.archetype === 'BACKEND_API_ONLY';
 
   writeFile('Agents.md', `# 📜 Agents.md - Project: ${projectName}
@@ -198,6 +199,12 @@ ${isHeadless ? '' : `| **Deanna Troi** | Design & UX | ${fleetPlan.officerRoster
 ## 🎨 3. Styling & Quality Governance
 - Styling: \`${styling}\`
 - Enforcement: \`.agents/hooks/crusher-health-check.js\`
+
+---
+
+## 📂 4. Mapeo Estructural y Jerarquía de Carpetas
+- **Estructura Seleccionada:** \`${distribution}\`
+- **Directiva Inviolable de Ubicación:** Todos los nuevos componentes, servicios o módulos deben residir en la jerarquía designada. Prohibido crear carpetas ad-hoc fuera de esta convención.
 `);
 
   // 8. Models and MCP configs

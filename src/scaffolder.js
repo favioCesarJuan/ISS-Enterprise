@@ -3,7 +3,7 @@
  * 🏗️ ISS-ENTERPRISE: GREENFIELD SCAFFOLDER ENGINE
  * ==============================================================================
  * Builds physical project directory layouts and initial manifests from scratch
- * for brand-new starbases (Monorepos, APIs, RAG Data Pipelines, Astro, etc.).
+ * for brand-new starbases (Monorepos, Atomic Design, APIs, RAG Data Pipelines, Astro, etc.).
  * ==============================================================================
  */
 
@@ -39,6 +39,7 @@ export function scaffoldGreenfieldProject(targetDir, choices = {}) {
   };
 
   const purpose = choices.project_purpose || choices.purpose || choices.archetype || 'SAAS_MONOREPO';
+  const distribution = choices.file_distribution || choices.distribution || '';
   const projectName = choices.projectName || path.basename(root);
 
   // 1. Standard Gitignore
@@ -55,7 +56,7 @@ build/
 `);
 
   // 2. Topology Scaffolding
-  if (/monorepo/i.test(purpose)) {
+  if (/monorepo/i.test(purpose) || /monorepo/i.test(distribution)) {
     mkdir('apps/web/src');
     mkdir('apps/api/src');
     mkdir('packages/shared-types/src');
@@ -77,7 +78,40 @@ build/
     writeFile('apps/api/src/main.ts', `console.log('🚀 API Service online on Starship Enterprise');\n`);
     writeFile('apps/web/src/index.tsx', `export const App = () => <h1>Welcome to ${projectName}</h1>;\n`);
 
-  } else if (/data|rag|pipeline/i.test(purpose)) {
+  } else if (/atomic/i.test(distribution) || /atomic/i.test(purpose) || /astro|ssg|portal|content/i.test(purpose)) {
+    // Atomic Design UI Structure (atoms, molecules, organisms, layouts, pages)
+    mkdir('src/components/atoms');
+    mkdir('src/components/molecules');
+    mkdir('src/components/organisms');
+    mkdir('src/components/templates');
+    mkdir('src/layouts');
+    mkdir('src/pages');
+    mkdir('src/styles');
+    mkdir('src/utils');
+    mkdir('src/types');
+    mkdir('public');
+
+    writeFile('package.json', JSON.stringify({
+      name: projectName,
+      version: '1.0.0',
+      type: 'module',
+      scripts: {
+        dev: 'astro dev',
+        build: 'astro build',
+        preview: 'astro preview'
+      },
+      dependencies: {
+        astro: '^4.0.0'
+      }
+    }, null, 2));
+
+    writeFile('astro.config.mjs', `import { defineConfig } from 'astro/config';\nexport default defineConfig({});\n`);
+    writeFile('src/pages/index.astro', `---\nimport MainLayout from '../layouts/MainLayout.astro';\nimport Heading from '../components/atoms/Heading.astro';\n---\n<MainLayout title="${projectName}">\n  <Heading text="🚀 ${projectName} Online with Atomic Design" />\n</MainLayout>\n`);
+    writeFile('src/layouts/MainLayout.astro', `---\nconst { title } = Astro.props;\n---\n<html lang="es">\n  <head><title>{title}</title></head>\n  <body><slot /></body>\n</html>\n`);
+    writeFile('src/components/atoms/Heading.astro', `---\nconst { text } = Astro.props;\n---\n<h1>{text}</h1>\n`);
+    writeFile('src/styles/global.css', `/* Global Styles & Design Tokens */\n:root {\n  --color-brand-primary: #1e3a8a;\n}\n`);
+
+  } else if (/data|rag|pipeline/i.test(purpose) || /data|vault/i.test(distribution)) {
     mkdir('ingest');
     mkdir('processing');
     mkdir('storage');
@@ -106,29 +140,6 @@ if __name__ == "__main__":
 `);
 
     writeFile('ingest/pipeline.py', `def run_ingest():\n    print("Ingesting tactical data stream...")\n`);
-
-  } else if (/astro|ssg|portal|content/i.test(purpose)) {
-    mkdir('src/pages');
-    mkdir('src/components');
-    mkdir('src/content');
-    mkdir('public');
-
-    writeFile('package.json', JSON.stringify({
-      name: projectName,
-      version: '1.0.0',
-      type: 'module',
-      scripts: {
-        dev: 'astro dev',
-        build: 'astro build',
-        preview: 'astro preview'
-      },
-      dependencies: {
-        astro: '^4.0.0'
-      }
-    }, null, 2));
-
-    writeFile('astro.config.mjs', `import { defineConfig } from 'astro/config';\nexport default defineConfig({});\n`);
-    writeFile('src/pages/index.astro', `---\n---\n<html>\n  <body>\n    <h1>🚀 ${projectName} Online</h1>\n  </body>\n</html>\n`);
 
   } else {
     // Modular Hexagonal Backend API
