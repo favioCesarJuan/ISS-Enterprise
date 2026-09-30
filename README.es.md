@@ -110,6 +110,7 @@ npx iss-enterprise mcps
 | **Tte. Cmdte. Data** | Lógica y Sistemas | Algoritmos, pipelines RAG, máquinas de estado, lógica formal |
 | **Tte. Cmdte. Geordi La Forge** | Jefe de Ingeniería | Paquetes de monorepo, rendimiento de compilación, Docker |
 | **Teniente Tasha Yar** | Seguridad Táctica | Escudos perimétricos, análisis estático Semgrep, bloqueo de comandos |
+| **Teniente Worf** | Seguridad Ofensiva / Red Team | Pruebas de estrés y penetración (Strix), auditoría de dependencias hostiles |
 | **Consejera Deanna Troi** | Diseño y Ergonomía UX | Sistema de diseño, accesibilidad WCAG AAA, higiene de UI |
 | **Dra. Beverly Crusher** | Salud Médica del Código | Protocolo Ponytail (YAGNI, diffs mínimos), bloqueo de polling continuo |
 | **Alférez Wesley Crusher** | Automatización Rápida | Scripts veloces, ejecución de tests (Vitest, Pytest, Playwright) |

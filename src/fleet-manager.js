@@ -117,6 +117,13 @@ export function allocateFleet(availableModels = [], dominantProvider = 'anthropi
       contextBudget: getContextBudget(highReasoningModel),
       purpose: 'Tactical security shields, input sanitization, Semgrep, defensive perimeter'
     },
+    'Lt. Worf (Offensive Security & Red Team)': {
+      nature: 'AI_AGENT',
+      model: highReasoningModel,
+      fallbackModel: fastEconomyModel,
+      contextBudget: getContextBudget(highReasoningModel),
+      purpose: 'Adversarial red teaming (Strix), penetration testing, supply chain audits, away-team incursions'
+    },
     'Counselor Deanna Troi (Design & UX)': {
       nature: 'AI_AGENT',
       model: highReasoningModel,

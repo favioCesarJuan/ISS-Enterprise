@@ -110,6 +110,7 @@ npx iss-enterprise mcps
 | **Lt. Cmdr. Data** | Systems & Logic | Algorithms, RAG pipelines, state machines, formal logic |
 | **Lt. Cmdr. Geordi La Forge** | Chief Engineer | Monorepo packages, build performance, Docker |
 | **Lt. Tasha Yar** | Tactical Security | Security shields, Semgrep static analysis, command intercept |
+| **Lt. Worf** | Offensive Security | Adversarial red teaming (Strix), penetration testing, supply chain audits |
 | **Counselor Deanna Troi** | Design & UX | Design systems, WCAG AAA accessibility, styling hygiene |
 | **Dr. Beverly Crusher** | Health & Quality | Ponytail protocol (YAGNI, minimal diffs), no-polling hook |
 | **Ensign Wesley Crusher** | Automation Runner | Fast scripts, test execution (Vitest, Pytest, Playwright) |

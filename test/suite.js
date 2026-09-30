@@ -234,6 +234,7 @@ runTest('Scaffolder & Generator: End-to-end greenfield creation with live hooks 
   assert.ok(agentsMd.includes('Mapeo Estructural y Jerarquía de Carpetas'));
   assert.ok(agentsMd.includes('Atomic Design UI'));
   assert.ok(agentsMd.includes('Lt. Tasha Yar'));
+  assert.ok(agentsMd.includes('Lt. Worf'));
 
   // Test hook execution via node
   const tashaOutput = execSync(`node ${path.join(testProjectDir, '.agents/hooks/tasha-security-shield.js')} --test`, { encoding: 'utf-8' });

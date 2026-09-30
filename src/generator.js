@@ -181,7 +181,8 @@ Enforces high standards of architecture, security, and verification for ${projec
 | **William T. Riker** | Lead AI Orchestrator | ${fleetPlan.officerRoster?.['William T. Riker (First Officer)']?.model || 'High-Reasoning'} | Task coordination, subagent dispatch |
 | **Data** | Systems & Logic | ${fleetPlan.officerRoster?.['Lt. Cmdr. Data (Systems & Logic)']?.model || 'High-Reasoning'} | Formal algorithms, state machines, RAG |
 | **Geordi La Forge** | Architecture Lead | ${fleetPlan.officerRoster?.['Lt. Cmdr. Geordi La Forge (Engineering)']?.model || 'High-Reasoning'} | Monorepo/package layout, clean interfaces |
-| **Lt. Tasha Yar** | Security Guardrail | ${fleetPlan.officerRoster?.['Lt. Tasha Yar (Security Guardrail)']?.model || 'High-Reasoning'} | Tactical defense perimeter, dependency audits |
+| **Lt. Tasha Yar** | Security Guardrail | ${fleetPlan.officerRoster?.['Lt. Tasha Yar (Security Guardrail)']?.model || 'High-Reasoning'} | Tactical defense perimeter, command intercept |
+| **Lt. Worf** | Offensive Security | ${fleetPlan.officerRoster?.['Lt. Worf (Offensive Security & Red Team)']?.model || 'High-Reasoning'} | Red Teaming (Strix), penetration testing, supply chain |
 ${isHeadless ? '' : `| **Deanna Troi** | Design & UX | ${fleetPlan.officerRoster?.['Counselor Deanna Troi (Design & UX)']?.model || 'High-Reasoning'} | UI tokens, accessibility, ${styling} |\\n`}
 | **Beverly Crusher** | Health & Quality | ${fleetPlan.officerRoster?.['Dr. Beverly Crusher (Health & Quality)']?.model || 'High-Reasoning'} | Ponytail minimalism, compiler hygiene |
 | **Wesley Crusher** | Automation Runner | ${fleetPlan.officerRoster?.['Ensign Wesley Crusher (Automation Runner)']?.model || 'Fast-Economy'} | Fast test execution, linters, scripts |
