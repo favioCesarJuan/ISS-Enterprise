@@ -162,7 +162,17 @@ pnpm dlx iss-enterprise inspect /path/to/my-project
 pnpm dlx iss-enterprise inspect /path/to/my-project --json
 ```
 
-### Initialize Agent Governance
+### ⚡ One-Shot Tactical Deployment (`engage`)
+The fastest way to arm any repository: automatically detects the stack, provisions the tactical crew, generates `.agents/hooks`, and arms Git pre-commit shields in one step:
+```bash
+# Recommended with pnpm:
+pnpm dlx iss-enterprise engage
+
+# Or inside this repository:
+pnpm engage
+```
+
+### Initialize Agent Governance (Interactive)
 Launch the interactive tactical wizard to tailor hooks, skills, and model allocations:
 ```bash
 pnpm dlx iss-enterprise init

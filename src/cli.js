@@ -66,6 +66,10 @@ export async function runCLI(args = []) {
     case 'inspect':
       await handleInspect(args.slice(1));
       break;
+    case 'engage':
+    case 'arm':
+      await handleEngage(args.slice(1));
+      break;
     case 'init':
       await handleInit(args.slice(1));
       break;
@@ -220,6 +224,16 @@ async function handleInit(args) {
 }
 
 /**
+ * Handler for `iss engage [dir]`
+ * One-shot tactical deployment: automatically detects project archetype,
+ * adopts optimal presets, provisions crew, MCPs, and auto-arms Git pre-commit hooks.
+ */
+async function handleEngage(args) {
+  const targetDir = args.find(a => !a.startsWith('-')) || process.cwd();
+  await handleInit(['--yes', targetDir]);
+}
+
+/**
  * Handler for `iss new <name> [dir]`
  */
 async function handleNew(args) {
@@ -355,6 +369,7 @@ ${c.bold}USAGE:${c.reset}
   $ iss <command> [options]
 
 ${c.bold}COMMANDS:${c.reset}
+  ${c.green}engage${c.reset} [dir]            One-shot tactical deployment: arms hooks, crew, MCPs & Git shields
   ${c.green}inspect${c.reset} [dir]            Inspect existing project, detect archetype & recommendations
   ${c.green}init${c.reset} [dir] [--yes]       Launch interactive wizard to scaffold multi-agent governance
   ${c.green}new${c.reset} <name> [dir]         Scaffold a brand new project from scratch (Greenfield)
@@ -367,6 +382,7 @@ ${c.bold}OPTIONS:${c.reset}
   ${c.cyan}--json${c.reset}                   Output structured JSON (available in inspect)
 
 ${c.bold}EXAMPLES:${c.reset}
+  $ iss engage
   $ iss inspect
   $ iss inspect /path/to/my-astro-project
   $ iss init --yes

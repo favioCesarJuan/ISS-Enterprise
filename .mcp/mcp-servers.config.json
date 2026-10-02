@@ -1,0 +1,32 @@
+{
+  "context7": {
+    "command": "npx",
+    "args": [
+      "-y",
+      "@upstash/context7-mcp"
+    ],
+    "priority": "MANDATORY",
+    "description": "Up-to-date documentation lookup."
+  },
+  "codebase-memory-mcp": {
+    "command": "npx",
+    "args": [
+      "-y",
+      "codebase-memory-mcp"
+    ],
+    "priority": "MANDATORY",
+    "description": "Knowledge graph for cascade evaluation."
+  },
+  "github": {
+    "command": "npx",
+    "args": [
+      "-y",
+      "@modelcontextprotocol/server-github"
+    ],
+    "priority": "HIGH",
+    "env": {
+      "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+    },
+    "description": "Full GitHub MCP integration."
+  }
+}

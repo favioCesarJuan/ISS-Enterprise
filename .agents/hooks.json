@@ -1,0 +1,28 @@
+{
+  "version": "1.0.0",
+  "framework": "ISS-Enterprise",
+  "description": "Deterministic Multi-Agent Governance Hooks for ISS-Enterprise",
+  "hooks": [
+    {
+      "event": "preToolUse",
+      "name": "tasha-security-shield",
+      "path": "./.agents/hooks/tasha-security-shield.js",
+      "timeout": 3000,
+      "description": "Tactical security perimeter guardrail orchestrated by Lt. Tasha Yar."
+    },
+    {
+      "event": "postInvocation",
+      "name": "crusher-health-check",
+      "path": "./.agents/hooks/crusher-health-check.js",
+      "timeout": 8000,
+      "description": "Medical health check, Ponytail minimalism, and quality linter."
+    },
+    {
+      "event": "postInvocation",
+      "name": "captains-log-writer",
+      "path": "./.agents/hooks/captains-log-writer.js",
+      "timeout": 2000,
+      "description": "Immutable ledger of agent actions and health telemetry."
+    }
+  ]
+}

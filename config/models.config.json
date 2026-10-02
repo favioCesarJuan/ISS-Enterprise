@@ -1,0 +1,136 @@
+{
+  "dominantProvider": "gemini",
+  "availableModels": [
+    "gemini-3.1-pro",
+    "gemini-3.8-flash"
+  ],
+  "officerRoster": {
+    "Captain (User)": {
+      "nature": "HUMAN",
+      "model": "The Captain (Human User)",
+      "role": "Strategic direction, requirements, executive sign-off"
+    },
+    "William T. Riker (First Officer)": {
+      "nature": "AI_AGENT",
+      "model": "gemini-3.1-pro",
+      "contextBudget": {
+        "maxTokens": 1000000,
+        "isConstrained": false,
+        "systemPromptBudget": 4000,
+        "chunkLimitLines": 250,
+        "quarantineInSubagent": false
+      },
+      "purpose": "Lead AI orchestrator, task planning, subagent dispatch"
+    },
+    "Lt. Cmdr. Data (Systems & Logic)": {
+      "nature": "AI_AGENT",
+      "model": "gemini-3.1-pro",
+      "contextBudget": {
+        "maxTokens": 1000000,
+        "isConstrained": false,
+        "systemPromptBudget": 4000,
+        "chunkLimitLines": 250,
+        "quarantineInSubagent": false
+      },
+      "purpose": "Formal logic, DDD, RAG pipelines, mathematical algorithms"
+    },
+    "Lt. Cmdr. Geordi La Forge (Engineering)": {
+      "nature": "AI_AGENT",
+      "model": "gemini-3.1-pro",
+      "contextBudget": {
+        "maxTokens": 1000000,
+        "isConstrained": false,
+        "systemPromptBudget": 4000,
+        "chunkLimitLines": 250,
+        "quarantineInSubagent": false
+      },
+      "purpose": "Architecture lead, monorepo boundaries, Docker, mentorship"
+    },
+    "Lt. Tasha Yar (Security Guardrail)": {
+      "nature": "AI_AGENT",
+      "model": "gemini-3.1-pro",
+      "fallbackModel": "gemini-3.8-flash",
+      "contextBudget": {
+        "maxTokens": 1000000,
+        "isConstrained": false,
+        "systemPromptBudget": 4000,
+        "chunkLimitLines": 250,
+        "quarantineInSubagent": false
+      },
+      "purpose": "Tactical security shields, input sanitization, Semgrep, defensive perimeter"
+    },
+    "Lt. Worf (Offensive Security & Red Team)": {
+      "nature": "AI_AGENT",
+      "model": "gemini-3.1-pro",
+      "fallbackModel": "gemini-3.8-flash",
+      "contextBudget": {
+        "maxTokens": 1000000,
+        "isConstrained": false,
+        "systemPromptBudget": 4000,
+        "chunkLimitLines": 250,
+        "quarantineInSubagent": false
+      },
+      "purpose": "Adversarial red teaming (Strix), penetration testing, supply chain audits, away-team incursions"
+    },
+    "Counselor Deanna Troi (Design & UX)": {
+      "nature": "AI_AGENT",
+      "model": "gemini-3.1-pro",
+      "fallbackModel": "gemini-3.8-flash",
+      "contextBudget": {
+        "maxTokens": 1000000,
+        "isConstrained": false,
+        "systemPromptBudget": 4000,
+        "chunkLimitLines": 250,
+        "quarantineInSubagent": false
+      },
+      "purpose": "Design system, ergonomics, styling governance, WCAG AAA"
+    },
+    "Dr. Beverly Crusher (Health & Quality)": {
+      "nature": "AI_AGENT",
+      "model": "gemini-3.1-pro",
+      "fallbackModel": "gemini-3.8-flash",
+      "contextBudget": {
+        "maxTokens": 1000000,
+        "isConstrained": false,
+        "systemPromptBudget": 4000,
+        "chunkLimitLines": 250,
+        "quarantineInSubagent": false
+      },
+      "purpose": "Code health, Ponytail minimalism, compiler diagnostics"
+    },
+    "Ensign Wesley Crusher (Automation Runner)": {
+      "nature": "AI_AGENT",
+      "model": "gemini-3.8-flash",
+      "contextBudget": {
+        "maxTokens": 1000000,
+        "isConstrained": false,
+        "systemPromptBudget": 4000,
+        "chunkLimitLines": 250,
+        "quarantineInSubagent": false
+      },
+      "purpose": "Fast script execution, test runners (Vitest/Pytest/Playwright)"
+    },
+    "Q (The Q Continuum)": {
+      "nature": "META_AGENT",
+      "model": "gemini-3.1-pro",
+      "contextBudget": {
+        "maxTokens": 1000000,
+        "isConstrained": false,
+        "systemPromptBudget": 4000,
+        "chunkLimitLines": 250,
+        "quarantineInSubagent": false
+      },
+      "purpose": "Omniscient meta-critic, timeline audits, bias challenge"
+    }
+  },
+  "budgetingDirectives": {
+    "enforceSmallContextQuarantine": true,
+    "maxSnippetLinesForSmallContext": 50,
+    "cognitiveLanguageProtocol": {
+      "enabled": true,
+      "reasoningCore": "en",
+      "ioLanguage": "auto_detect_mirror",
+      "tokenSavingsEstimate": "30-50%"
+    }
+  }
+}

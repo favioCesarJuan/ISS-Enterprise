@@ -212,5 +212,22 @@ ${isHeadless ? '' : `| **Deanna Troi** | Design & UX | ${fleetPlan.officerRoster
   writeFile('config/models.config.json', JSON.stringify(fleetPlan, null, 2));
   writeFile('.mcp/mcp-servers.config.json', JSON.stringify(mcpPlan.recommendedConfig || {}, null, 2));
 
+  // 9. Git Pre-Commit Hook Auto-Arming
+  const gitHooksDir = path.join(root, '.git', 'hooks');
+  if (fs.existsSync(gitHooksDir)) {
+    try {
+      const preCommitPath = path.join(gitHooksDir, 'pre-commit');
+      const hookContent = `#!/bin/sh
+# 🛡️ ISS-Enterprise Tactical Git Pre-Commit Guardrail
+node .agents/hooks/tasha-security-shield.js --test || exit 1
+node .agents/hooks/crusher-health-check.js --test || exit 1
+`;
+      fs.writeFileSync(preCommitPath, hookContent, { mode: 0o755 });
+      created.push('.git/hooks/pre-commit');
+    } catch {
+      // Graceful fallback if .git permissions are restricted
+    }
+  }
+
   return created;
 }

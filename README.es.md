@@ -162,7 +162,17 @@ pnpm dlx iss-enterprise inspect /ruta/hacia/proyecto
 pnpm dlx iss-enterprise inspect /ruta/hacia/proyecto --json
 ```
 
-### Inicializar la Gobernanza de Agentes
+### ⚡ Despliegue Táctico en 1 Solo Paso (`engage`)
+La forma más veloz de gobernar cualquier repositorio: detecta automáticamente el stack, aprovisiona la tripulación, genera los `.agents/hooks` y activa los escudos de Git pre-commit en un solo comando:
+```bash
+# Recomendado con pnpm:
+pnpm dlx iss-enterprise engage
+
+# O dentro de este propio repositorio:
+pnpm engage
+```
+
+### Inicializar la Gobernanza de Agentes (Interactivo)
 Inicia el asistente táctico interactivo:
 ```bash
 pnpm dlx iss-enterprise init
