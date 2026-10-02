@@ -161,10 +161,10 @@ Enforces high standards of architecture, security, and verification for ${projec
 `);
   }
 
-  // 7. Agents.md (Tailored Crew Roster & Folder Hierarchy)
+  // 8. Agents.md (Tailored Crew Roster & Folder Hierarchy)
   const isHeadless = profile.archetype === 'DATA_PIPELINE_RAG' || profile.archetype === 'BACKEND_API_ONLY';
 
-  writeFile('Agents.md', `# 📜 Agents.md - Project: ${projectName}
+  const agentsMdContent = `# 📜 Agents.md - Project: ${projectName}
 
 > **Engine**: ISS-Enterprise Universal Multi-Agent Scaffolding Engine  
 > **Archetype**: ${profile.archetype || 'ADAPTIVE'}  
@@ -183,8 +183,7 @@ Enforces high standards of architecture, security, and verification for ${projec
 | **Geordi La Forge** | Architecture Lead | ${fleetPlan.officerRoster?.['Lt. Cmdr. Geordi La Forge (Engineering)']?.model || 'High-Reasoning'} | Monorepo/package layout, clean interfaces |
 | **Lt. Tasha Yar** | Security Guardrail | ${fleetPlan.officerRoster?.['Lt. Tasha Yar (Security Guardrail)']?.model || 'High-Reasoning'} | Tactical defense perimeter, command intercept |
 | **Lt. Worf** | Offensive Security | ${fleetPlan.officerRoster?.['Lt. Worf (Offensive Security & Red Team)']?.model || 'High-Reasoning'} | Red Teaming (Strix), penetration testing, supply chain |
-${isHeadless ? '' : `| **Deanna Troi** | Design & UX | ${fleetPlan.officerRoster?.['Counselor Deanna Troi (Design & UX)']?.model || 'High-Reasoning'} | UI tokens, accessibility, ${styling} |\\n`}
-| **Beverly Crusher** | Health & Quality | ${fleetPlan.officerRoster?.['Dr. Beverly Crusher (Health & Quality)']?.model || 'High-Reasoning'} | Ponytail minimalism, compiler hygiene |
+${isHeadless ? '' : `| **Deanna Troi** | Design & UX | ${fleetPlan.officerRoster?.['Counselor Deanna Troi (Design & UX)']?.model || 'High-Reasoning'} | UI tokens, accessibility, ${styling} |\n`}| **Beverly Crusher** | Health & Quality | ${fleetPlan.officerRoster?.['Dr. Beverly Crusher (Health & Quality)']?.model || 'High-Reasoning'} | Ponytail minimalism, compiler hygiene |
 | **Wesley Crusher** | Automation Runner | ${fleetPlan.officerRoster?.['Ensign Wesley Crusher (Automation Runner)']?.model || 'Fast-Economy'} | Fast test execution, linters, scripts |
 | **Q (Continuum)** | Meta-Critic | ${fleetPlan.officerRoster?.['Q (The Q Continuum)']?.model || 'High-Reasoning'} | Bias challenge, timeline & chaos trials |
 
@@ -206,13 +205,65 @@ ${isHeadless ? '' : `| **Deanna Troi** | Design & UX | ${fleetPlan.officerRoster
 ## 📂 4. Mapeo Estructural y Jerarquía de Carpetas
 - **Estructura Seleccionada:** \`${distribution}\`
 - **Directiva Inviolable de Ubicación:** Todos los nuevos componentes, servicios o módulos deben residir en la jerarquía designada. Prohibido crear carpetas ad-hoc fuera de esta convención.
+`;
+  writeFile('Agents.md', agentsMdContent);
+
+  // 9. Multi-AI Support Contracts: CLAUDE.md, .cursorrules, .windsurfrules
+  // A. CLAUDE.md (Anthropic Claude Code & Claude Desktop)
+  writeFile('CLAUDE.md', `# 🛸 Claude Guidelines for ${projectName}
+
+> Governed by **ISS-Enterprise Tactical Multi-Agent Framework**
+> Archetype: **${profile.archetype || 'ADAPTIVE'}**
+
+## 🛡️ Critical Guardrails
+1. **Security**: NEVER execute catastrophic commands (\`rm -rf /\`, wildcards on root, piped remote curl to bash, \`chmod 777\`).
+2. **Quality & Health (Ponytail Protocol)**:
+   - BAN continuous polling (\`setInterval(() => fetch(...))\`). Use WebSockets, SSE, or reactive events.
+   - Respect styling policy: **\`${styling}\`**. ${allowTailwind ? 'Tailwind utility classes and CSS modules are permitted.' : 'STRICT BAN on Tailwind/Nativewind classes; use native CSS3 & CSS Modules.'}
+3. **Architecture & File Placement**:
+   - Follow structural hierarchy: **\`${distribution}\`**. Do not create arbitrary top-level folders.
+
+## ⚡ Primary Commands
+- Run verification tests: \`pnpm test\` (or \`npm test\` / \`node test/suite.js\`)
+- Check security shield: \`node .agents/hooks/tasha-security-shield.js --test\`
+- Check health & styling: \`node .agents/hooks/crusher-health-check.js --test\`
+- Tactical Crew Roster & Roles: Inspect \`Agents.md\`
 `);
 
-  // 8. Models and MCP configs
+  // B. .cursorrules (Cursor IDE)
+  writeFile('.cursorrules', `# ISS-Enterprise Governance Rules for Cursor
+# Project: ${projectName} | Archetype: ${profile.archetype || 'ADAPTIVE'}
+
+[GOVERNANCE & ROSTER]
+- Multi-agent framework active: Consult Agents.md for officer roles.
+- Lead Orchestrator: Commander William T. Riker.
+
+[SECURITY PERIMETER - LT. TASHA YAR]
+- Prohibit destructive terminal commands: rm -rf, curl | bash, chmod 777.
+- Always run pre-commit verification before finalizing changes.
+
+[CODE HYGIENE - DR. CRUSHER]
+- Continuous polling is strictly forbidden.
+- Styling strategy: ${styling} (${allowTailwind ? 'Tailwind and CSS Modules permitted' : 'Tailwind prohibited; strict CSS Modules only'}).
+- Folder hierarchy: ${distribution}.
+`);
+
+  // C. .windsurfrules (Windsurf IDE)
+  writeFile('.windsurfrules', `# ISS-Enterprise Governance Rules for Windsurf
+# Project: ${projectName}
+
+- Framework: ISS-Enterprise Multi-Agent Fleet (consult Agents.md)
+- Styling Policy: ${styling}
+- Structural Directory: ${distribution}
+- Prohibited Commands: Destructive deletions, unrestricted root permissions
+- Verification Command: pnpm test
+`);
+
+  // 10. Models and MCP configs
   writeFile('config/models.config.json', JSON.stringify(fleetPlan, null, 2));
   writeFile('.mcp/mcp-servers.config.json', JSON.stringify(mcpPlan.recommendedConfig || {}, null, 2));
 
-  // 9. Git Pre-Commit Hook Auto-Arming
+  // 11. Git Pre-Commit Hook Auto-Arming
   const gitHooksDir = path.join(root, '.git', 'hooks');
   if (fs.existsSync(gitHooksDir)) {
     try {

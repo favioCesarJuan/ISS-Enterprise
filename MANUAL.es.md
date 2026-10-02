@@ -246,6 +246,17 @@ Esto garantiza que:
 - Cada `git commit` (ya sea ejecutado por un agente de IA autónomo o por un desarrollador humano) activa automáticamente los escudos de seguridad y salud de código.
 - Si un agente o desarrollador introduce importaciones de estilos prohibidas o código inseguro, Git detiene el commit al instante devolviendo un código de salida distinto de cero.
 
+### Contratos para Múltiples Motores de IA (`CLAUDE.md`, `.cursorrules`, `.windsurfrules`, `Agents.md`)
+
+Diferentes asistentes de IA leen las reglas de gobernanza desde distintos archivos según su ecosistema. ISS-Enterprise resuelve esta fragmentación generando de manera dinámica contratos adaptados durante la inicialización:
+
+| Asistente / Entorno de IA | Archivo Generado | Propósito y Control |
+| :--- | :--- | :--- |
+| **Claude Code & Claude Desktop** | `CLAUDE.md` | Guardrails esenciales: prohíbe comandos destructivos, impone el protocolo Ponytail anti-polling, política de estilos y comandos de verificación. |
+| **Cursor IDE** | `.cursorrules` | Instruye a los agentes de Cursor a respetar el perímetro de Tasha Yar y la higiene médica de la Dra. Crusher. |
+| **Windsurf IDE** | `.windsurfrules` | Define las directivas de arquitectura y validación de código para Cascade. |
+| **Antigravity / Gemini / Genérico** | `Agents.md` | Jerarquía completa de oficiales, protocolos de lenguaje cognitivo y presupuesto de modelos. |
+
 ---
 
 ## 4. Orquestación de Flota Heterogénea y Presupuesto de Contexto

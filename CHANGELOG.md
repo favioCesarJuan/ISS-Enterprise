@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.0] - 2026-10-02
+
+### Added
+- **Multi-AI Engine Governance Contracts**: Generator now dynamically synthesizes tailored contracts for all major AI assistants and IDEs:
+  - `CLAUDE.md`: Tailored for Anthropic Claude Code and Claude Desktop (prohibits catastrophic commands, enforces Ponytail protocol and testing standards).
+  - `.cursorrules`: Integrated guardrails for Cursor IDE agents.
+  - `.windsurfrules`: Project-specific architectural guardrails for Windsurf (Cascade).
+- **One-Shot `engage` Command**: Added non-interactive full tactical arming (`iss engage`) that auto-detects the project, provisions the crew, and binds Git pre-commit hooks in a single step.
+- **Automated Git Pre-Commit Hook Binding**: Arms `.git/hooks/pre-commit` to automatically run Tasha Yar and Dr. Crusher shields on every `git commit`.
+
+---
+
 ## [1.1.0] - 2026-10-02
 
 ### Added

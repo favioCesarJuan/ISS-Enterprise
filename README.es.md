@@ -172,10 +172,11 @@ pnpm dlx iss-enterprise engage
 pnpm engage
 ```
 
-#### 🛡️ ¿Cómo funciona la Ejecución Automática? (Doble Escudo Táctico)
-Al ejecutar `engage`, ISS-Enterprise levanta automáticamente dos niveles de defensa:
-1. **Escudo de Runtime para Agentes (`.agents/hooks.json`)**: Intercepta en tiempo real las herramientas de los agentes de IA. Comandos destructivos como `rm -rf /` o inyecciones indebidas son bloqueados antes de tocar tu sistema operativo.
-2. **Escudo Nativo de Git Pre-Commit (`.git/hooks/pre-commit`)**: Vinculado automáticamente al repositorio Git. Cada vez que tú o un agente intentan hacer un `git commit`:
+#### 🛡️ ¿Cómo funciona la Ejecución Automática? (Defensa Táctica Multinivel)
+Al ejecutar `engage`, ISS-Enterprise levanta automáticamente tres niveles de defensa:
+1. **Contratos para Múltiples Motores de IA (`Agents.md`, `CLAUDE.md`, `.cursorrules`, `.windsurfrules`)**: Sintetiza automáticamente las directivas y guardrails para cualquier entorno o asistente de IA (Claude Code/Desktop, Cursor, Windsurf, Antigravity, Gemini). Claude o Cursor respetarán de inmediato el minimalismo Ponytail, los estándares de testing y los comandos prohibidos.
+2. **Escudo de Runtime para Agentes (`.agents/hooks.json`)**: Intercepta en tiempo real las herramientas de los agentes de IA. Comandos destructivos como `rm -rf /` o inyecciones indebidas son bloqueados antes de tocar tu sistema operativo.
+3. **Escudo Nativo de Git Pre-Commit (`.git/hooks/pre-commit`)**: Vinculado automáticamente al repositorio Git. Cada vez que tú o un agente intentan hacer un `git commit`:
    ```text
    $ git commit -m "feat: actualización táctica"
    🛡️  [TASHA YAR]: Tactical shield online.
