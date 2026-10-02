@@ -264,6 +264,19 @@ runTest('Scaffolder & Generator: End-to-end greenfield creation with live hooks 
   assert.ok(fs.existsSync(path.join(testProjectDir, '.agents/hooks/tasha-security-shield.js')));
   assert.ok(fs.existsSync(path.join(testProjectDir, '.agents/hooks/crusher-health-check.js')));
   assert.ok(fs.existsSync(path.join(testProjectDir, '.agents/hooks/captains-log-writer.js')));
+
+  // Verify Multi-AI Governance Contracts
+  assert.ok(fs.existsSync(path.join(testProjectDir, 'CLAUDE.md')), 'CLAUDE.md must be generated');
+  const claudeContent = fs.readFileSync(path.join(testProjectDir, 'CLAUDE.md'), 'utf-8');
+  assert.ok(claudeContent.includes('Critical Guardrails'));
+  assert.ok(claudeContent.includes('Ponytail Protocol'));
+  assert.ok(claudeContent.includes('tasha-security-shield.js'));
+
+  assert.ok(fs.existsSync(path.join(testProjectDir, '.cursorrules')), '.cursorrules must be generated');
+  const cursorContent = fs.readFileSync(path.join(testProjectDir, '.cursorrules'), 'utf-8');
+  assert.ok(cursorContent.includes('SECURITY PERIMETER - LT. TASHA YAR'));
+
+  assert.ok(fs.existsSync(path.join(testProjectDir, '.windsurfrules')), '.windsurfrules must be generated');
   
   const agentsMd = fs.readFileSync(path.join(testProjectDir, 'Agents.md'), 'utf-8');
   assert.ok(agentsMd.includes('Mapeo Estructural y Jerarquía de Carpetas'));

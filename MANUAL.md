@@ -246,6 +246,17 @@ This guarantees that:
 - Every `git commit` (whether triggered by an autonomous agent or a human developer) automatically runs security and health checks.
 - If an agent generates forbidden styling imports or introduces code that fails security audits, Git immediately halts the commit with a non-zero exit code.
 
+### Multi-AI Engine Contracts (`CLAUDE.md`, `.cursorrules`, `.windsurfrules`, `Agents.md`)
+
+Different AI assistants read project governance from different files. ISS-Enterprise solves this fragmentation by dynamically generating tailored rule contracts during initialization:
+
+| AI Assistant / IDE | Generated Contract | Enforcement & Purpose |
+| :--- | :--- | :--- |
+| **Claude Code & Claude Desktop** | `CLAUDE.md` | Primary guardrails: forbids destructive commands, mandates Ponytail anti-polling protocol, enforces styling policy and testing commands. |
+| **Cursor IDE** | `.cursorrules` | Directs Cursor agents to respect Lt. Tasha Yar security boundary and Dr. Crusher code hygiene. |
+| **Windsurf IDE** | `.windsurfrules` | Defines project-specific architectural boundaries and verification scripts for Cascade. |
+| **Antigravity / Gemini / Generic** | `Agents.md` | Complete crew hierarchy, cognitive language protocols, and model budget mapping. |
+
 ---
 
 ## 4. Heterogeneous Fleet Orchestration & Context Budgeting
