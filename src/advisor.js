@@ -227,9 +227,9 @@ export function getTailoredQuestions(detectedProfile) {
       id: 'styling_strategy',
       title: '🎨 ¿Cuál es la estrategia de estilos y UI (CSS / Tailwind / Native)?',
       options: [
-        'Mixto: CSS Puro / Modules + TailwindCSS (Caso como en cosmo-hub)',
+        'Mixto: CSS Puro / Modules + TailwindCSS (Híbrido utilitario y modular)',
         'TailwindCSS Puro / Tailwind v4 (Utilitarios y directivas)',
-        'CSS3 Puro & CSS Modules Estricto (Prohibición de Tailwind como en extra-time)',
+        'CSS3 Puro & CSS Modules Estricto (Prohibición estricta de Tailwind / Cero Bloat)',
         'Native StyleSheet puro (React Native / Expo sin abstracciones)',
         'CSS-in-JS (Styled-Components o Emotion)',
         'Sin Estilos / Headless (APIs, Pipelines, CLIs sin frontend)',

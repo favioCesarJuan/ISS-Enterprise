@@ -67,12 +67,15 @@ build/
       version: '1.0.0',
       private: true,
       workspaces: ['apps/*', 'packages/*'],
+      packageManager: 'pnpm@9.0.0',
       scripts: {
         build: 'turbo run build',
         dev: 'turbo run dev',
         test: 'turbo run test'
       }
     }, null, 2));
+
+    writeFile('pnpm-workspace.yaml', `packages:\n  - 'apps/*'\n  - 'packages/*'\n`);
 
     writeFile('packages/shared-types/src/index.ts', `export interface VitalEntity {\n  id: string;\n  createdAt: string;\n}\n`);
     writeFile('apps/api/src/main.ts', `console.log('🚀 API Service online on Starship Enterprise');\n`);

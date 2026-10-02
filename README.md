@@ -35,8 +35,8 @@ Seamlessly coordinates heterogeneous model fleets (Google Gemini, Anthropic Clau
 
 ### 4. 🎨 Adaptive Styling Governance (Never Hardcoded)
 Adapts styling rules to the project's actual architecture:
-- **Permissive Mixed Mode** (e.g. `cosmo-hub`): TailwindCSS utilities paired with CSS Modules.
-- **Strict Prohibition Mode** (e.g. `extra-time`): Pure CSS3 + CSS Modules; Dr. Crusher's hook blocks Tailwind injection.
+- **Permissive Mixed Mode** (e.g. content portals and hybrid Astro sites): TailwindCSS utilities paired with CSS Modules.
+- **Strict Prohibition Mode** (e.g. enterprise architectures with strict native CSS): Pure CSS3 + CSS Modules; Dr. Crusher's hook blocks Tailwind injection.
 - **Native StyleSheet Mode**: React Native / Expo zero-abstraction layout.
 - **Headless Mode**: Completely disables UI/CSS linting for data pipelines, microservices, and CLIs.
 
@@ -57,47 +57,146 @@ Deploys and pre-approves the three essential Model Context Protocol servers:
 
 ---
 
+## 🗺️ Visual Architecture & Tactical Flow
+
+### 1. End-to-End Scaffolding & Governance Lifecycle
+How the ISS-Enterprise tactical engine processes a codebase from initial scan to deterministic agent guardrails:
+
+```mermaid
+graph TD
+    USER["🚀 User / CI (pnpm dlx iss-enterprise init)"] --> DETECTOR["🛰️ 1. Project Detector (detector.js)"]
+    DETECTOR --> CHECK{"Existing Codebase?"}
+    CHECK -->|Empty / Greenfield| GREENFIELD["🌱 Greenfield Scaffolder (scaffolder.js)"]
+    CHECK -->|Detected Project| SCAN["🔍 Archetype Signature Analysis"]
+    
+    SCAN --> ADVISOR["🧠 2. Tactical Advisor (advisor.js)"]
+    GREENFIELD --> ADVISOR
+    ADVISOR -->|Standard Preset| PRESET["Optimal Stack Configuration"]
+    ADVISOR -->|Selected '[Otra / Custom]'| HEURISTIC["⚡ Heuristic Investigation Engine"]
+    
+    PRESET --> FLEET["🤖 3. Fleet Manager & Context Budgeting"]
+    HEURISTIC --> FLEET
+    FLEET --> SKILLS["🗜️ 4. Dynamic Skill Compactor (6 Canonical Pillars)"]
+    SKILLS --> MCP["🔌 5. Indispensable MCP Triad (context7, memory, github)"]
+    MCP --> GENERATOR["🏗️ 6. Architecture Generator (generator.js)"]
+    GENERATOR --> OUTPUT["🛡️ Artifacts: .agents/hooks, Agents.md, .mcp config"]
+```
+
+### 2. Runtime Tactical Shield & Quality Loop
+How physical hooks deterministically intercept agent proposals before execution:
+
+```mermaid
+flowchart LR
+    subgraph AGENT ["🤖 AI Agent / Subagent"]
+        CMD["Proposes Command or Code Modification"]
+    end
+
+    subgraph SHIELDS ["🛡️ Deterministic Tactical Shields (.agents/hooks)"]
+        TASHA{"Lt. Tasha Yar<br/>Security Shield"}
+        CRUSHER{"Dr. Crusher<br/>Health & Style Check"}
+        LOG["Captains Log Writer"]
+    end
+
+    CMD --> TASHA
+    TASHA -->|🚨 Prohibited / Destructive Command| BLOCK1["⛔ Command Intercepted & Blocked"]
+    TASHA -->| Safe Command| CRUSHER
+    
+    CRUSHER -->| Forbidden Styling / Continuous Polling| BLOCK2["⛔ Code Rejected (YAGNI & Style Violation)"]
+    CRUSHER -->| Code Nominal| LOG
+    
+    LOG --> SUCCESS["✅ Safe Execution & Immutable Log Record"]
+```
+
+### 3. Crew Command Hierarchy & Context Window Budgeting
+Model tiering ensures reasoning depth without token overflow or cost blowup:
+
+```mermaid
+graph TD
+    CAPTAIN["👑 Captain (Human / You)<br/>Strategic Vision & Architecture Approval"] --> RIKER["⚔️ Commander William T. Riker (Lead Orchestrator)<br/>Task Planning, Subagent Delegation (>=128k - 1M context)"]
+    
+    RIKER --> DATA["🔬 Lt. Cmdr. Data<br/>Logic, Algorithms, RAG & Vectors"]
+    RIKER --> GEORDI["🔧 Lt. Cmdr. Geordi<br/>Monorepo Builds & Docker Infrastructure"]
+    RIKER --> TASHA["🛡️ Lt. Tasha Yar & Worf<br/>Tactical Security & Red Team Offensive Defense"]
+    RIKER --> TROI["🎨 Counselor Deanna Troi<br/>Design Systems, UI Tokens & WCAG AAA"]
+    RIKER --> CRUSHER["💉 Dr. Beverly Crusher<br/>Ponytail Protocol, YAGNI & Style Hygiene"]
+    
+    RIKER --> WESLEY["⚡ Ensign Wesley Crusher<br/>Fast Economy Scripts, Vitest/Pytest (<=32k context in subagent)"]
+    
+    Q["✨ Q (The Q Continuum)<br/>Omniscient Meta-Critic & Chaos Trials"] -.->|External Reality Check| RIKER
+```
+
+---
+
+## 📋 Requirements & Recommended Setup
+
+- **Node.js**: `>=18.0.0` (Native ES Modules support required).
+- **Package Manager**: **`pnpm >= 9.0.0` is strongly recommended**.
+
+### 📦 Why pnpm is Recommended (Security & Disk Economy)
+
+ISS-Enterprise and its multi-agent fleet strongly recommend **`pnpm`** over npm/yarn for two critical reasons:
+
+1. **🛡️ Tactical Security (Zero Phantom Dependencies):**
+   Standard `npm` and `yarn v1` create flat, hoisted `node_modules` trees where code can accidentally or maliciously import packages not explicitly declared in `package.json`. `pnpm` enforces a **strict, non-flat symlink structure**: autonomous agents and scripts can only access direct dependencies, effectively neutralizing phantom-dependency supply chain risks.
+
+2. **💾 Content-Addressable Store (Massive Disk Savings):**
+   `pnpm` stores all package files in a single, content-addressable global store (`~/.local/share/pnpm/store`) and creates hard links into project directories. When orchestrating multiple dreadnoughts, monorepos, and agent testbeds, identical dependencies are stored physically on disk **only once**, saving gigabytes of storage across your fleet.
+
+---
+
 ## 🚀 Quickstart
 
 ### Inspect Any Project
 Scan any repository to detect archetype, styling rules, tech stack, and recommended agent roster:
 ```bash
-# In the project directory:
+# Recommended with pnpm (fast, isolated, zero-disk bloat):
+pnpm dlx iss-enterprise inspect
+
+# Or via npx:
 npx iss-enterprise inspect
 
-# Or inspect a specific target path:
-npx iss-enterprise inspect /path/to/my-project
+# Inspect a specific target path:
+pnpm dlx iss-enterprise inspect /path/to/my-project
 
-# JSON output for automated pipelines:
-npx iss-enterprise inspect /path/to/my-project --json
+# Structured JSON output for automated pipelines:
+pnpm dlx iss-enterprise inspect /path/to/my-project --json
 ```
 
 ### Initialize Agent Governance
 Launch the interactive tactical wizard to tailor hooks, skills, and model allocations:
 ```bash
-npx iss-enterprise init
+pnpm dlx iss-enterprise init
 
 # Or accept optimal automated defaults:
-npx iss-enterprise init --yes
+pnpm dlx iss-enterprise init --yes
 ```
 
 ### Forge a Greenfield Project
-Scaffold a brand-new project from scratch:
+Scaffold a brand-new project with physical folder layout and starter code:
 ```bash
-npx iss-enterprise new alpha-station
+pnpm dlx iss-enterprise new alpha-station
 ```
 
-### Compact & Fuse Overlapping Skills
-Eliminate duplicate instructions and compress `.agents/skills` into canonical pillars:
+### Manage Skills: Create & Compact
+Forge custom operational skills or compact existing ones into canonical pillars:
 ```bash
-npx iss-enterprise skills compact
+# Create a new specialized skill with YAML frontmatter:
+pnpm dlx iss-enterprise skills create database-migrations-guard
+
+# Compact and fuse overlapping skills to eliminate prompt bloat:
+pnpm dlx iss-enterprise skills compact
+
+# List active and recommended skills:
+pnpm dlx iss-enterprise skills list
 ```
 
-### Configure MCP Triad
-Generate `.mcp/mcp-servers.config.json` with the indispensable sensor array:
+### Configure & Extend MCP Servers
+Deploy the indispensable sensor triad (`context7`, `codebase-memory-mcp`, `github`):
 ```bash
-npx iss-enterprise mcps
+pnpm dlx iss-enterprise mcps
 ```
+> [!TIP]
+> **Extending MCPs & Custom Servers**: You can add any third-party MCP server (Postgres, Docker, Sentry, Figma) directly to `.mcp/mcp-servers.config.json`. See the [Tactical Operations Manual (MANUAL.md)](MANUAL.md) for complete step-by-step guides.
 
 ---
 
@@ -123,15 +222,16 @@ npx iss-enterprise mcps
 ISS-Enterprise includes a comprehensive test suite covering all archetypes, heuristic investigations, context budgeting rules, and physical hook executions:
 
 ```bash
-npm test
+pnpm test
+# Or: node test/suite.js
 ```
 
 ```
 🛸 ISS-ENTERPRISE TACTICAL TEST RUNNER
 ----------------------------------------------------
-  ✔ Detector: Correctly identifies Astro SSG with Mixed Styling (cosmo-hub)
-  ✔ Detector: Correctly identifies Python Data/RAG Pipeline Headless (inAstraCaeli)
-  ✔ Detector: Correctly identifies Fullstack Monorepo with Strict CSS (extra-time)
+  ✔ Detector: Correctly identifies Astro SSG with Mixed Styling (Astro Portal archetype)
+  ✔ Detector: Correctly identifies Python Data/RAG Pipeline Headless (Python RAG Pipeline archetype)
+  ✔ Detector: Correctly identifies Fullstack Monorepo with Strict CSS (Enterprise Monorepo archetype)
   ✔ Advisor: Heuristic investigation of Bun and ElysiaJS
   ✔ Advisor: Heuristic investigation of FastAPI
   ✔ Advisor: Unrecognized custom tech adopts fallback zero-dep governance
@@ -141,10 +241,20 @@ npm test
   ✔ SkillEngine: Compaction fuses multiple raw skills into canonical domains
   ✔ McpEngine: Builds indispensable triad (context7, codebase-memory-mcp, github)
   ✔ McpEngine: Replaces heavy GitHub MCP with lightweight gh CLI skill on small local models
-  ✔ Scaffolder & Generator: End-to-end greenfield creation with live hooks
+  ✔ Advisor: Prioritizes Atomic Design UI recommendation for Astro stacks
+  ✔ Advisor: Prioritizes Hexagonal Layers recommendation for Backend APIs
+  ✔ Scaffolder & Generator: End-to-end greenfield creation with live hooks and Atomic Design
 ----------------------------------------------------
-RESULTS: 13/13 Tests Passed.
+RESULTS: 15/15 Tests Passed.
 ```
+
+---
+
+## 🤝 Community & Contributing
+
+We welcome tactical additions, archetype detectors, and new agent officers! Please review [CONTRIBUTING.md](CONTRIBUTING.md) for full setup instructions, Zero-Dependencies policies, and testing guidelines.
+
+See [CHANGELOG.md](CHANGELOG.md) for the release notes and version history.
 
 ---
 

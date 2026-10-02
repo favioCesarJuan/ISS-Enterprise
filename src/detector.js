@@ -116,15 +116,15 @@ export function detectProject(targetDir = process.cwd()) {
   // Detect styling strategy
   let stylingStrategy = 'UNKNOWN';
   if (hasTailwind && (hasFile('style.css') || hasPattern(/\.module\.css$/) || hasAstro)) {
-    stylingStrategy = 'MIXED_CSS_TAILWIND'; // Like cosmo-hub!
+    stylingStrategy = 'MIXED_CSS_TAILWIND'; // Mixed utility + CSS modules
   } else if (hasTailwind) {
     stylingStrategy = 'TAILWIND_PURE';
   } else if (hasFile('rules.md') && fs.readFileSync(path.join(dir, 'rules.md'), 'utf-8').includes('TailwindCSS')) {
-    stylingStrategy = 'STRICT_NO_TAILWIND'; // Like extra-time!
+    stylingStrategy = 'STRICT_NO_TAILWIND'; // Strict zero-Tailwind directive
   } else if (hasExpo && !hasTailwind) {
     stylingStrategy = 'NATIVE_STYLESHEET';
   } else if (!hasNext && !hasAstro && !hasExpo) {
-    stylingStrategy = 'HEADLESS_NO_UI'; // Like inAstraCaeli!
+    stylingStrategy = 'HEADLESS_NO_UI'; // Headless backend or data pipeline
   }
 
   return {

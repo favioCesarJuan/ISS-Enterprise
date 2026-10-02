@@ -368,7 +368,7 @@ ${c.bold}OPTIONS:${c.reset}
 
 ${c.bold}EXAMPLES:${c.reset}
   $ iss inspect
-  $ iss inspect /path/to/cosmo-hub
+  $ iss inspect /path/to/my-astro-project
   $ iss init --yes
   $ iss new alpha-station
   $ iss skills compact

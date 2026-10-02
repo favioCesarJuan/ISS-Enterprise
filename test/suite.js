@@ -17,6 +17,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
 import { execSync } from 'node:child_process';
 import { detectProject, ARCHETYPES } from '../src/detector.js';
 import { investigateCustomChoice, getTailoredQuestions } from '../src/advisor.js';
@@ -49,25 +50,63 @@ function runTest(name, fn) {
 }
 
 // -----------------------------------------------------------------------------
-// Test 1: Archetype Detection on Real Projects
+// Fixture Setup for 100% Portable Tests (Runs on any machine or CI)
 // -----------------------------------------------------------------------------
-runTest('Detector: Correctly identifies Astro SSG with Mixed Styling (cosmo-hub)', () => {
-  const p = detectProject('/home/favio/Mis-proyectos/cosmo-hub');
+const fixturesDir = fs.mkdtempSync(path.join(os.tmpdir(), 'iss-fixtures-'));
+
+function setupFixtures() {
+
+  // 1. Astro SSG Portal with Mixed Styling
+  const astroDir = path.join(fixturesDir, 'astro-ssg-mock');
+  fs.mkdirSync(astroDir, { recursive: true });
+  fs.writeFileSync(path.join(astroDir, 'package.json'), JSON.stringify({
+    dependencies: { astro: '^4.0.0', tailwindcss: '^3.4.0', '@biomejs/biome': '^1.5.0' }
+  }));
+  fs.writeFileSync(path.join(astroDir, 'astro.config.mjs'), 'export default {};\n');
+  fs.writeFileSync(path.join(astroDir, 'style.css'), '/* Mixed styling */\n');
+
+  // 2. Python Data / RAG Pipeline Headless
+  const ragDir = path.join(fixturesDir, 'python-rag-mock');
+  fs.mkdirSync(ragDir, { recursive: true });
+  fs.writeFileSync(path.join(ragDir, 'requirements.txt'), 'openai\nchromadb\n');
+  fs.writeFileSync(path.join(ragDir, 'pipeline.py'), '# RAG pipeline\n');
+  fs.writeFileSync(path.join(ragDir, 'astronauts_dump.txt'), 'Payload dump\n');
+  fs.writeFileSync(path.join(ragDir, 'Dockerfile'), 'FROM python:3.11\n');
+
+  // 3. Fullstack Monorepo with Strict CSS
+  const monorepoDir = path.join(fixturesDir, 'strict-monorepo-mock');
+  fs.mkdirSync(path.join(monorepoDir, 'apps'), { recursive: true });
+  fs.mkdirSync(path.join(monorepoDir, 'packages'), { recursive: true });
+  fs.writeFileSync(path.join(monorepoDir, 'package.json'), JSON.stringify({
+    dependencies: { '@nestjs/core': '^10.0.0' }
+  }));
+  fs.writeFileSync(path.join(monorepoDir, 'turbo.json'), '{"$schema": "https://turbo.build/schema.json"}\n');
+  fs.writeFileSync(path.join(monorepoDir, 'pnpm-workspace.yaml'), "packages:\n  - 'apps/*'\n  - 'packages/*'\n");
+  fs.writeFileSync(path.join(monorepoDir, 'rules.md'), '# Architecture Directives\nStrict policy: No TailwindCSS permitted. Use pure CSS3 & CSS Modules only.\n');
+}
+
+setupFixtures();
+
+// -----------------------------------------------------------------------------
+// Test 1: Archetype Detection on Portable Archetypes
+// -----------------------------------------------------------------------------
+runTest('Detector: Correctly identifies Astro SSG with Mixed Styling (Astro Portal archetype)', () => {
+  const p = detectProject(path.join(fixturesDir, 'astro-ssg-mock'));
   assert.equal(p.archetype, ARCHETYPES.CONTENT_SSG_PORTAL);
   assert.equal(p.stylingStrategy, 'MIXED_CSS_TAILWIND');
   assert.equal(p.techStack.hasAstro, true);
   assert.equal(p.techStack.hasBiome, true);
 });
 
-runTest('Detector: Correctly identifies Python Data/RAG Pipeline Headless (inAstraCaeli)', () => {
-  const p = detectProject('/home/favio/CodeData/inAstraCaeli');
+runTest('Detector: Correctly identifies Python Data/RAG Pipeline Headless (Python RAG Pipeline archetype)', () => {
+  const p = detectProject(path.join(fixturesDir, 'python-rag-mock'));
   assert.equal(p.archetype, ARCHETYPES.DATA_PIPELINE_RAG);
   assert.equal(p.stylingStrategy, 'HEADLESS_NO_UI');
   assert.equal(p.techStack.hasPython, true);
 });
 
-runTest('Detector: Correctly identifies Fullstack Monorepo with Strict CSS (extra-time)', () => {
-  const p = detectProject('/home/favio/Mis-proyectos/extra-time');
+runTest('Detector: Correctly identifies Fullstack Monorepo with Strict CSS (Enterprise Monorepo archetype)', () => {
+  const p = detectProject(path.join(fixturesDir, 'strict-monorepo-mock'));
   assert.equal(p.archetype, ARCHETYPES.FULLSTACK_MONOREPO);
   assert.equal(p.stylingStrategy, 'STRICT_NO_TAILWIND');
   assert.equal(p.techStack.hasTurbo, true);
@@ -192,13 +231,9 @@ runTest('Advisor: Prioritizes Hexagonal Layers recommendation for Backend APIs',
 // -----------------------------------------------------------------------------
 // Test 7: Greenfield Scaffolding & End-to-End Governance Generation with Atomic Design
 // -----------------------------------------------------------------------------
-const tmpBase = path.resolve('/home/favio/Mis-proyectos/ISS-Enterprise/.tmp-test-run');
+const tmpBase = fs.mkdtempSync(path.join(os.tmpdir(), 'iss-scaffold-'));
 
 runTest('Scaffolder & Generator: End-to-end greenfield creation with live hooks and Atomic Design', () => {
-  if (fs.existsSync(tmpBase)) {
-    fs.rmSync(tmpBase, { recursive: true, force: true });
-  }
-  fs.mkdirSync(tmpBase, { recursive: true });
 
   const testProjectDir = path.join(tmpBase, 'uss-defiant');
   scaffoldGreenfield(testProjectDir, {
@@ -247,6 +282,9 @@ runTest('Scaffolder & Generator: End-to-end greenfield creation with live hooks 
 
   // Clean up
   fs.rmSync(tmpBase, { recursive: true, force: true });
+  if (fs.existsSync(fixturesDir)) {
+    fs.rmSync(fixturesDir, { recursive: true, force: true });
+  }
 });
 
 console.log('----------------------------------------------------');
