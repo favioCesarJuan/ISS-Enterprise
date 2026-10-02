@@ -231,6 +231,21 @@ File: `.agents/hooks/captains-log-writer.js`
 
 Maintains an append-only, immutable record of agent actions, architectural decisions, and verification test outputs in `.agents/captains-log.jsonl`.
 
+### Automated Git Pre-Commit Binding (`.git/hooks/pre-commit`)
+
+When you run `iss engage` (or `iss init`), the generator automatically inspects if the target project contains a `.git` repository. If detected, it arms `.git/hooks/pre-commit` with an automated execution wrapper:
+
+```sh
+#!/bin/sh
+# 🛡️ ISS-Enterprise Tactical Git Pre-Commit Guardrail
+node .agents/hooks/tasha-security-shield.js --test || exit 1
+node .agents/hooks/crusher-health-check.js --test || exit 1
+```
+
+This guarantees that:
+- Every `git commit` (whether triggered by an autonomous agent or a human developer) automatically runs security and health checks.
+- If an agent generates forbidden styling imports or introduces code that fails security audits, Git immediately halts the commit with a non-zero exit code.
+
 ---
 
 ## 4. Heterogeneous Fleet Orchestration & Context Budgeting

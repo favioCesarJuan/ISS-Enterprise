@@ -172,6 +172,17 @@ pnpm dlx iss-enterprise engage
 pnpm engage
 ```
 
+#### 🛡️ How Automatic Execution Works (Dual-Layer Shields)
+When you run `engage`, ISS-Enterprise deploys two automatic defensive perimeters:
+1. **Agent Runtime Guardrail (`.agents/hooks.json`)**: Intercepts AI agent tool calls in real time. Commands like `rm -rf /` or unauthorized network scripts are blocked before touching your operating system.
+2. **Native Git Pre-Commit Guardrail (`.git/hooks/pre-commit`)**: Automatically bound to your repository. Every time an agent or human runs `git commit`:
+   ```text
+   $ git commit -m "feat: tactical update"
+   🛡️  [TASHA YAR]: Tactical shield online.
+   🩺  [DR. CRUSHER]: Health check online. Tailwind allowed: false
+   ```
+   If security checks fail or code violates styling directives, Git automatically aborts the commit.
+
 ### Initialize Agent Governance (Interactive)
 Launch the interactive tactical wizard to tailor hooks, skills, and model allocations:
 ```bash
