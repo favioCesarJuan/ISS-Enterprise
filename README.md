@@ -66,15 +66,15 @@ How the ISS-Enterprise tactical engine processes a codebase from initial scan to
 graph TD
     USER["🚀 User / CI (pnpm dlx iss-enterprise init)"] --> DETECTOR["🛰️ 1. Project Detector (detector.js)"]
     DETECTOR --> CHECK{"Existing Codebase?"}
-    CHECK -->|Empty / Greenfield| GREENFIELD["🌱 Greenfield Scaffolder (scaffolder.js)"]
-    CHECK -->|Detected Project| SCAN["🔍 Archetype Signature Analysis"]
+    CHECK -->|Empty or Greenfield| GREENFIELD["🌱 Greenfield Scaffolder (scaffolder.js)"]
+    CHECK -->|Existing Project| SCAN["🔍 Archetype Signature Analysis"]
     
     SCAN --> ADVISOR["🧠 2. Tactical Advisor (advisor.js)"]
     GREENFIELD --> ADVISOR
     ADVISOR -->|Standard Preset| PRESET["Optimal Stack Configuration"]
-    ADVISOR -->|Selected '[Otra / Custom]'| HEURISTIC["⚡ Heuristic Investigation Engine"]
+    ADVISOR -->|Custom Tech Selected| HEURISTIC["⚡ Heuristic Investigation Engine"]
     
-    PRESET --> FLEET["🤖 3. Fleet Manager & Context Budgeting"]
+    PRESET --> FLEET["🤖 3. Fleet Manager and Context Budgeting"]
     HEURISTIC --> FLEET
     FLEET --> SKILLS["🗜️ 4. Dynamic Skill Compactor (6 Canonical Pillars)"]
     SKILLS --> MCP["🔌 5. Indispensable MCP Triad (context7, memory, github)"]
@@ -93,18 +93,18 @@ flowchart LR
 
     subgraph SHIELDS ["🛡️ Deterministic Tactical Shields (.agents/hooks)"]
         TASHA{"Lt. Tasha Yar<br/>Security Shield"}
-        CRUSHER{"Dr. Crusher<br/>Health & Style Check"}
+        CRUSHER{"Dr. Crusher<br/>Health and Style Check"}
         LOG["Captains Log Writer"]
     end
 
     CMD --> TASHA
-    TASHA -->|🚨 Prohibited / Destructive Command| BLOCK1["⛔ Command Intercepted & Blocked"]
-    TASHA -->| Safe Command| CRUSHER
+    TASHA -->|Prohibited Command| BLOCK1["⛔ Command Intercepted and Blocked"]
+    TASHA -->|Safe Command| CRUSHER
     
-    CRUSHER -->| Forbidden Styling / Continuous Polling| BLOCK2["⛔ Code Rejected (YAGNI & Style Violation)"]
-    CRUSHER -->| Code Nominal| LOG
+    CRUSHER -->|Forbidden Style or Polling| BLOCK2["⛔ Code Rejected - YAGNI or Style Violation"]
+    CRUSHER -->|Code Nominal| LOG
     
-    LOG --> SUCCESS["✅ Safe Execution & Immutable Log Record"]
+    LOG --> SUCCESS["✅ Safe Execution and Immutable Log Record"]
 ```
 
 ### 3. Crew Command Hierarchy & Context Window Budgeting
@@ -112,17 +112,17 @@ Model tiering ensures reasoning depth without token overflow or cost blowup:
 
 ```mermaid
 graph TD
-    CAPTAIN["👑 Captain (Human / You)<br/>Strategic Vision & Architecture Approval"] --> RIKER["⚔️ Commander William T. Riker (Lead Orchestrator)<br/>Task Planning, Subagent Delegation (>=128k - 1M context)"]
+    CAPTAIN["👑 Captain (Human / You)<br/>Strategic Vision and Architecture Approval"] --> RIKER["⚔️ Commander William T. Riker (Lead Orchestrator)<br/>Task Planning, Subagent Delegation (>=128k - 1M context)"]
     
-    RIKER --> DATA["🔬 Lt. Cmdr. Data<br/>Logic, Algorithms, RAG & Vectors"]
-    RIKER --> GEORDI["🔧 Lt. Cmdr. Geordi<br/>Monorepo Builds & Docker Infrastructure"]
-    RIKER --> TASHA["🛡️ Lt. Tasha Yar & Worf<br/>Tactical Security & Red Team Offensive Defense"]
-    RIKER --> TROI["🎨 Counselor Deanna Troi<br/>Design Systems, UI Tokens & WCAG AAA"]
-    RIKER --> CRUSHER["💉 Dr. Beverly Crusher<br/>Ponytail Protocol, YAGNI & Style Hygiene"]
+    RIKER --> DATA["🔬 Lt. Cmdr. Data<br/>Logic, Algorithms, RAG and Vectors"]
+    RIKER --> GEORDI["🔧 Lt. Cmdr. Geordi<br/>Monorepo Builds and Docker Infrastructure"]
+    RIKER --> TASHA["🛡️ Lt. Tasha Yar and Worf<br/>Tactical Security and Red Team Defense"]
+    RIKER --> TROI["🎨 Counselor Deanna Troi<br/>Design Systems, UI Tokens and WCAG AAA"]
+    RIKER --> CRUSHER["💉 Dr. Beverly Crusher<br/>Ponytail Protocol, YAGNI and Style Hygiene"]
     
     RIKER --> WESLEY["⚡ Ensign Wesley Crusher<br/>Fast Economy Scripts, Vitest/Pytest (<=32k context in subagent)"]
     
-    Q["✨ Q (The Q Continuum)<br/>Omniscient Meta-Critic & Chaos Trials"] -.->|External Reality Check| RIKER
+    Q["✨ Q (The Q Continuum)<br/>Omniscient Meta-Critic and Chaos Trials"] -.->|External Reality Check| RIKER
 ```
 
 ---

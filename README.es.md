@@ -66,13 +66,13 @@ Cómo el motor táctico de ISS-Enterprise procesa cualquier repositorio para est
 graph TD
     USER["🚀 Usuario / CI (pnpm dlx iss-enterprise init)"] --> DETECTOR["🛰️ 1. Detector de Proyectos (detector.js)"]
     DETECTOR --> CHECK{"¿Existe Código?"}
-    CHECK -->|Directorio Vacío| GREENFIELD["🌱 Modo Greenfield (scaffolder.js)"]
+    CHECK -->|Directorio Vacio| GREENFIELD["🌱 Modo Greenfield (scaffolder.js)"]
     CHECK -->|Proyecto Existente| SCAN["🔍 Análisis de Firmas y Arquetipo"]
     
     SCAN --> ADVISOR["🧠 2. Asesor Táctico (advisor.js)"]
     GREENFIELD --> ADVISOR
     ADVISOR -->|Preset Estándar| PRESET["Configuración Óptima del Stack"]
-    ADVISOR -->|Opción '[Otra / Personalizada]'| HEURISTIC["⚡ Motor de Investigación Heurística"]
+    ADVISOR -->|Tecnologia Personalizada| HEURISTIC["⚡ Motor de Investigación Heurística"]
     
     PRESET --> FLEET["🤖 3. Asignador de Flota y Presupuesto de Contexto"]
     HEURISTIC --> FLEET
@@ -98,13 +98,13 @@ flowchart LR
     end
 
     CMD --> TASHA
-    TASHA -->|🚨 Comando Prohibido o Destructivo| BLOCK1["⛔ Comando Interceptado y Bloqueado"]
-    TASHA -->| Comando Seguro| CRUSHER
+    TASHA -->|Comando Prohibido| BLOCK1["⛔ Comando Interceptado y Bloqueado"]
+    TASHA -->|Comando Seguro| CRUSHER
     
-    CRUSHER -->| Violación de Estilos / Polling Continuo| BLOCK2["⛔ Código Rechazado (YAGNI / Violación de Reglas)"]
-    CRUSHER -->| Código Nominal| LOG
+    CRUSHER -->|Violacion de Estilos o Polling| BLOCK2["⛔ Código Rechazado - Violación de Reglas"]
+    CRUSHER -->|Codigo Nominal| LOG
     
-    LOG --> SUCCESS["✅ Ejecución Permitida + Registro en Bitácora"]
+    LOG --> SUCCESS["✅ Ejecución Permitida y Registro en Bitácora"]
 ```
 
 ### 3. Jerarquía de Mando y Asignación por Presupuesto de Contexto
@@ -116,7 +116,7 @@ graph TD
     
     RIKER --> DATA["🔬 Lt. Cmdr. Data<br/>Lógica, Algoritmos, Pipelines RAG y Grafos"]
     RIKER --> GEORDI["🔧 Lt. Cmdr. Geordi<br/>Monorepos, Builds y Docker"]
-    RIKER --> TASHA["🛡️ Lt. Tasha Yar & Worf<br/>Seguridad Táctica y Red Team Ofensivo"]
+    RIKER --> TASHA["🛡️ Lt. Tasha Yar y Worf<br/>Seguridad Táctica y Red Team Ofensivo"]
     RIKER --> TROI["🎨 Counselor Deanna Troi<br/>Design Systems, Tokens UI y Accesibilidad WCAG AAA"]
     RIKER --> CRUSHER["💉 Dr. Beverly Crusher<br/>Protocolo Ponytail, YAGNI e Higiene de Código"]
     
