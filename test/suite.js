@@ -21,11 +21,12 @@ import os from 'node:os';
 import { execSync } from 'node:child_process';
 import { detectProject, ARCHETYPES } from '../src/detector.js';
 import { investigateCustomChoice, getTailoredQuestions } from '../src/advisor.js';
-import { allocateFleet, allocateCrewToFleet, MODEL_REGISTRY } from '../src/fleet-manager.js';
+import { allocateFleet, allocateCrewToFleet, MODEL_REGISTRY, generateFleetEnvConfig, generateOllamaPullScript } from '../src/fleet-manager.js';
 import { recommendSkillsForArchetype, compactAndFuseSkills, createNewSkill } from '../src/skill-engine.js';
 import { buildMcpPlan, configureIndispensableTriad } from '../src/mcp-engine.js';
 import { scaffoldGreenfield } from '../src/scaffolder.js';
 import { generateGovernanceArchitecture } from '../src/generator.js';
+import { runGovernanceAudit } from '../src/auditor.js';
 
 const PASS = '  \x1b[32m✔\x1b[0m';
 const FAIL = '  \x1b[31m✖\x1b[0m';
@@ -83,6 +84,28 @@ function setupFixtures() {
   fs.writeFileSync(path.join(monorepoDir, 'turbo.json'), '{"$schema": "https://turbo.build/schema.json"}\n');
   fs.writeFileSync(path.join(monorepoDir, 'pnpm-workspace.yaml'), "packages:\n  - 'apps/*'\n  - 'packages/*'\n");
   fs.writeFileSync(path.join(monorepoDir, 'rules.md'), '# Architecture Directives\nStrict policy: No TailwindCSS permitted. Use pure CSS3 & CSS Modules only.\n');
+
+  // 4. Mobile Cross-Platform (Expo / React Native)
+  const expoDir = path.join(fixturesDir, 'expo-app-mock');
+  fs.mkdirSync(expoDir, { recursive: true });
+  fs.writeFileSync(path.join(expoDir, 'package.json'), JSON.stringify({
+    dependencies: { expo: '^50.0.0', 'react-native': '0.73.2' }
+  }));
+  fs.writeFileSync(path.join(expoDir, 'app.json'), '{"expo": {"name": "VoyagerMobile"}}\n');
+
+  // 5. Chrome Extension (Manifest V3)
+  const extDir = path.join(fixturesDir, 'chrome-ext-mock');
+  fs.mkdirSync(extDir, { recursive: true });
+  fs.writeFileSync(path.join(extDir, 'manifest.json'), JSON.stringify({
+    manifest_version: 3,
+    name: 'TrekHUD',
+    version: '1.0.0'
+  }));
+
+  // 6. High-Performance System CLI (Rust / Cargo)
+  const rustDir = path.join(fixturesDir, 'rust-cli-mock');
+  fs.mkdirSync(rustDir, { recursive: true });
+  fs.writeFileSync(path.join(rustDir, 'Cargo.toml'), '[package]\nname = "warp-core-cli"\nversion = "0.1.0"\n');
 }
 
 setupFixtures();
@@ -111,6 +134,24 @@ runTest('Detector: Correctly identifies Fullstack Monorepo with Strict CSS (Ente
   assert.equal(p.stylingStrategy, 'STRICT_NO_TAILWIND');
   assert.equal(p.techStack.hasTurbo, true);
   assert.equal(p.techStack.hasNest, true);
+});
+
+runTest('Detector: Correctly identifies Mobile Cross-Platform (Expo / React Native)', () => {
+  const p = detectProject(path.join(fixturesDir, 'expo-app-mock'));
+  assert.equal(p.archetype, ARCHETYPES.MOBILE_CROSS_PLATFORM);
+  assert.equal(p.stylingStrategy, 'NATIVE_STYLESHEET');
+  assert.equal(p.techStack.hasExpo, true);
+});
+
+runTest('Detector: Correctly identifies Chrome Extension Manifest V3', () => {
+  const p = detectProject(path.join(fixturesDir, 'chrome-ext-mock'));
+  assert.equal(p.archetype, ARCHETYPES.CHROME_EXTENSION);
+});
+
+runTest('Detector: Correctly identifies High-Performance System CLI (Rust / Go)', () => {
+  const p = detectProject(path.join(fixturesDir, 'rust-cli-mock'));
+  assert.equal(p.archetype, ARCHETYPES.SYSTEM_CLI_RUST_GO);
+  assert.equal(p.techStack.hasRust, true);
 });
 
 // -----------------------------------------------------------------------------
@@ -291,10 +332,63 @@ runTest('Scaffolder & Generator: End-to-end greenfield creation with live hooks 
 
   const crusherOutput = execSync(`node ${path.join(testProjectDir, '.agents/hooks/crusher-health-check.js')} --test`, { encoding: 'utf-8' });
   assert.ok(crusherOutput.includes('Health check online'));
-  assert.ok(crusherOutput.includes('Tailwind allowed: true'), 'Tailwind must be allowed when MIXED_CSS_TAILWIND is selected');
+  // Verify new fleet environment & script generation
+  assert.ok(fs.existsSync(path.join(testProjectDir, '.env.fleet.example')), '.env.fleet.example must be generated');
+  const fleetEnv = fs.readFileSync(path.join(testProjectDir, '.env.fleet.example'), 'utf-8');
+  assert.ok(fleetEnv.includes('GEMINI_API_KEY'));
 
-  // Clean up
+  assert.ok(fs.existsSync(path.join(testProjectDir, 'scripts/pull-fleet-models.sh')), 'scripts/pull-fleet-models.sh must be generated');
+  assert.ok(fs.existsSync(path.join(testProjectDir, 'scripts/warmup-mcp.sh')), 'scripts/warmup-mcp.sh must be generated');
+
+  // Verify Auditor (iss doctor) on healthy project
+  const healthyAudit = runGovernanceAudit(testProjectDir);
+  assert.equal(healthyAudit.ok, true, 'Healthy project must pass doctor audit');
+  assert.ok(healthyAudit.passed.length >= 3);
+
+  // Clean up testProjectDir
   fs.rmSync(tmpBase, { recursive: true, force: true });
+});
+
+// -----------------------------------------------------------------------------
+// Test 9: Generator Dry-Run Mode
+// -----------------------------------------------------------------------------
+runTest('Generator: Respects dryRun without creating files on disk', () => {
+  const dryRunDir = fs.mkdtempSync(path.join(os.tmpdir(), 'iss-dry-'));
+  const fleet = allocateCrewToFleet(['claude']);
+  const mcpPlan = configureIndispensableTriad({ preferredModel: 'claude' });
+
+  const simulatedFiles = generateGovernanceArchitecture(dryRunDir, {
+    archetype: ARCHETYPES.CONTENT_SSG_PORTAL,
+    techStack: { hasAstro: true },
+    styling_strategy: 'STRICT_NO_TAILWIND'
+  }, fleet, mcpPlan, { dryRun: true });
+
+  assert.ok(simulatedFiles.length > 5);
+  // Verify that nothing was physically created
+  assert.equal(fs.existsSync(path.join(dryRunDir, '.agents')), false, '.agents must not exist in dry run');
+  assert.equal(fs.existsSync(path.join(dryRunDir, 'Agents.md')), false, 'Agents.md must not exist in dry run');
+
+  fs.rmSync(dryRunDir, { recursive: true, force: true });
+});
+
+// -----------------------------------------------------------------------------
+// Test 10: Auditor Drift Detection
+// -----------------------------------------------------------------------------
+runTest('Auditor: Detects styling drift when forbidden dependency is injected', () => {
+  const driftDir = fs.mkdtempSync(path.join(os.tmpdir(), 'iss-drift-'));
+  const agentsDir = path.join(driftDir, '.agents');
+  fs.mkdirSync(agentsDir, { recursive: true });
+  fs.writeFileSync(path.join(agentsDir, 'hooks.json'), JSON.stringify({ framework: 'ISS-Enterprise', hooks: [] }));
+  fs.writeFileSync(path.join(driftDir, 'Agents.md'), '# Governance\nPolicy: STRICT_NO_TAILWIND with pure CSS3 & CSS Modules only.\n');
+  fs.writeFileSync(path.join(driftDir, 'package.json'), JSON.stringify({
+    dependencies: { tailwindcss: '^3.4.0' } // Violation!
+  }));
+
+  const audit = runGovernanceAudit(driftDir);
+  assert.equal(audit.ok, false, 'Drifted project must fail audit');
+  assert.ok(audit.failures.some(f => f.includes('TailwindCSS found in package.json but forbidden')));
+
+  fs.rmSync(driftDir, { recursive: true, force: true });
   if (fs.existsSync(fixturesDir)) {
     fs.rmSync(fixturesDir, { recursive: true, force: true });
   }

@@ -14,6 +14,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import readline from 'node:readline';
+import { execSync } from 'node:child_process';
 import { detectProject, ARCHETYPES } from './detector.js';
 import { getTailoredQuestions, investigateCustomChoice } from './advisor.js';
 import { detectAvailableFleet, allocateCrewToFleet, PROVIDER_REGISTRY } from './fleet-manager.js';
@@ -21,6 +22,7 @@ import { recommendSkillsForArchetype, compactAndFuseSkills, createNewSkill } fro
 import { configureIndispensableTriad, evaluateTriadSubstitutions } from './mcp-engine.js';
 import { scaffoldGreenfield } from './scaffolder.js';
 import { generateGovernanceArchitecture } from './generator.js';
+import { runGovernanceAudit, printAuditReport } from './auditor.js';
 
 // ANSI terminal color helpers
 const c = {
@@ -69,6 +71,10 @@ export async function runCLI(args = []) {
     case 'engage':
     case 'arm':
       await handleEngage(args.slice(1));
+      break;
+    case 'doctor':
+    case 'audit':
+      await handleDoctor(args.slice(1));
       break;
     case 'init':
       await handleInit(args.slice(1));
@@ -138,10 +144,14 @@ async function handleInspect(args) {
  */
 async function handleInit(args) {
   const autoYes = args.includes('--yes') || args.includes('-y');
+  const isDryRun = args.includes('--dry-run');
   const targetDir = args.find(a => !a.startsWith('-')) || process.cwd();
   const dir = path.resolve(targetDir);
 
   printBanner();
+  if (isDryRun) {
+    console.log(`${c.yellow}${c.bold}🔍 [DRY RUN MODE ACTIVE]: Simulating governance deployment without touching disk.${c.reset}`);
+  }
   console.log(`${c.bold}⚙️  INITIALIZING MULTI-AGENT GOVERNANCE AT:${c.reset} ${c.cyan}${dir}${c.reset}\n`);
 
   const profile = detectProject(dir);
@@ -210,27 +220,51 @@ async function handleInit(args) {
 
     // Step 4: Generate Artifacts
     console.log(`\n${c.bold}⚡ EMITTING DETERMINISTIC AGENT DIRECTIVES...${c.reset}`);
-    const createdFiles = generateGovernanceArchitecture(dir, answers, fleetAlloc, mcpTriad);
+    const createdFiles = generateGovernanceArchitecture(dir, answers, fleetAlloc, mcpTriad, { dryRun: isDryRun });
+
+    if (isDryRun) {
+      console.log(`\n${c.yellow}${c.bold}🔍 [DRY RUN RESULTS]: 0 files written to disk.${c.reset}`);
+      console.log(`${c.silver}The following ${createdFiles.length} files would be created/modified:${c.reset}`);
+      createdFiles.forEach(f => console.log(`  ${c.cyan}[DRY-RUN WOULD CREATE]${c.reset} ${f}`));
+      console.log(`\nTo physically apply these changes, re-run without --dry-run.\n`);
+      return createdFiles;
+    }
 
     console.log(`\n${c.green}${c.bold}✅ MISSION COMPLETE: GOVERNANCE INSTALLED${c.reset}`);
     console.log(`${c.silver}Generated ${createdFiles.length} tactical assets in ${dir}:${c.reset}`);
-    createdFiles.slice(0, 8).forEach(f => console.log(`  ${c.dim}+${c.reset} ${f}`));
-    if (createdFiles.length > 8) console.log(`  ${c.dim}... and ${createdFiles.length - 8} more.${c.reset}`);
+    createdFiles.slice(0, 10).forEach(f => console.log(`  ${c.dim}+${c.reset} ${f}`));
+    if (createdFiles.length > 10) console.log(`  ${c.dim}... and ${createdFiles.length - 10} more.${c.reset}`);
 
     console.log(`\n${c.gold}Enterprise flagship is battle-ready. Execute! 🚀${c.reset}\n`);
+    return createdFiles;
   } finally {
     rl.close();
   }
 }
 
 /**
- * Handler for `iss engage [dir]`
+ * Handler for `iss engage [dir] [--dry-run]`
  * One-shot tactical deployment: automatically detects project archetype,
  * adopts optimal presets, provisions crew, MCPs, and auto-arms Git pre-commit hooks.
  */
 async function handleEngage(args) {
   const targetDir = args.find(a => !a.startsWith('-')) || process.cwd();
-  await handleInit(['--yes', targetDir]);
+  const passArgs = ['--yes', targetDir];
+  if (args.includes('--dry-run')) passArgs.push('--dry-run');
+  await handleInit(passArgs);
+}
+
+/**
+ * Handler for `iss doctor [dir]` / `iss audit [dir]`
+ */
+async function handleDoctor(args) {
+  const targetDir = args.find(a => !a.startsWith('-')) || process.cwd();
+  const report = runGovernanceAudit(targetDir);
+  printAuditReport(report);
+  if (!report.ok && !args.includes('--no-exit')) {
+    process.exitCode = 1;
+  }
+  return report;
 }
 
 /**
@@ -331,9 +365,33 @@ async function handleSkills(args) {
 }
 
 /**
- * Handler for `iss mcps [dir]`
+ * Handler for `iss mcps [dir|warmup]`
  */
 async function handleMcps(args) {
+  if (args[0] === 'warmup') {
+    const targetDir = args[1] || process.cwd();
+    const target = path.resolve(targetDir);
+    printBanner();
+    console.log(`${c.bold}🔌 WARMING UP INDISPENSABLE MCP TRIAD & KNOWLEDGE GRAPH AT:${c.reset} ${c.cyan}${target}${c.reset}`);
+    const warmupScript = path.join(target, 'scripts/warmup-mcp.sh');
+    if (fs.existsSync(warmupScript)) {
+      console.log(`Executing warmup script: ${c.dim}${warmupScript}${c.reset}`);
+      try {
+        execSync(`bash "${warmupScript}"`, { stdio: 'inherit', cwd: target });
+      } catch (err) {
+        console.warn(`Warmup completed with exit code notice: ${err.message}`);
+      }
+    } else {
+      console.log(`📡 Warming up codebase-memory-mcp indexer on ${target}...`);
+      try {
+        execSync(`npx codebase-memory-mcp index .`, { stdio: 'inherit', cwd: target });
+      } catch {
+        console.log(`ℹ️  codebase-memory-mcp will index automatically on first agent request.`);
+      }
+    }
+    return;
+  }
+
   const targetDir = args[0] || process.cwd();
   printBanner();
   console.log(`${c.bold}Indispensable MCP Triad for ${c.cyan}${targetDir}${c.reset}:`);
@@ -370,24 +428,27 @@ ${c.bold}USAGE:${c.reset}
 
 ${c.bold}COMMANDS:${c.reset}
   ${c.green}engage${c.reset} [dir]            One-shot tactical deployment: arms hooks, crew, MCPs & Git shields
-  ${c.green}inspect${c.reset} [dir]            Inspect existing project, detect archetype & recommendations
-  ${c.green}init${c.reset} [dir] [--yes]       Launch interactive wizard to scaffold multi-agent governance
-  ${c.green}new${c.reset} <name> [dir]         Scaffold a brand new project from scratch (Greenfield)
+  ${c.green}doctor${c.reset} [dir]            Audit governance drift, executable shields, and policy alignment
+  ${c.green}inspect${c.reset} [dir]           Inspect existing project, detect archetype & recommendations
+  ${c.green}init${c.reset} [dir] [--yes]      Launch interactive wizard to scaffold multi-agent governance
+  ${c.green}new${c.reset} <name> [dir]        Scaffold a brand new project from scratch (Greenfield)
   ${c.green}skills${c.reset} list|compact|create Manage, compact & fuse agent skills
-  ${c.green}mcps${c.reset} [dir]               Configure the Indispensable MCP Triad (Docs, Graph, VCS)
-  ${c.green}help${c.reset}                     Display this tactical guidance manifest
+  ${c.green}mcps${c.reset} [dir|warmup]       Configure or warm up the Indispensable MCP Triad
+  ${c.green}help${c.reset}                    Display this tactical guidance manifest
 
 ${c.bold}OPTIONS:${c.reset}
-  ${c.cyan}--yes, -y${c.reset}                Non-interactive mode, auto-accept optimal recommendations
-  ${c.cyan}--json${c.reset}                   Output structured JSON (available in inspect)
+  ${c.cyan}--yes, -y${c.reset}               Non-interactive mode, auto-accept optimal recommendations
+  ${c.cyan}--dry-run${c.reset}               Simulate governance deployment without writing to disk
+  ${c.cyan}--json${c.reset}                  Output structured JSON (available in inspect)
 
 ${c.bold}EXAMPLES:${c.reset}
   $ iss engage
+  $ iss engage --dry-run
+  $ iss doctor
   $ iss inspect
-  $ iss inspect /path/to/my-astro-project
+  $ iss inspect /path/to/my-expo-app
   $ iss init --yes
   $ iss new alpha-station
-  $ iss skills compact
-  $ iss mcps
+  $ iss mcps warmup
 `);
 }

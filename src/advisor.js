@@ -176,6 +176,19 @@ export function getTailoredQuestions(detectedProfile) {
     distributionOptions.push('Monorepo Packages (apps/web, apps/mobile, apps/api, packages/ui, packages/core) [⭐ Recomendado para Monorepos]');
     distributionOptions.push('Monorepo + Atomic Design (apps/* + packages/ui/src/atoms, molecules, organisms)');
     distributionOptions.push('Vertical Slice Monorepo (apps/* + features/*)');
+  } else if (detectedProfile.archetype === 'MOBILE_CROSS_PLATFORM' || stack.hasExpo) {
+    // Mobile React Native / Expo
+    distributionOptions.push('Mobile Feature-First (src/features/screens, src/components/ui, src/navigation, src/hooks) [⭐ Recomendado para Expo / React Native]');
+    distributionOptions.push('Atomic Design UI (src/components/atoms, molecules, organisms, screens)');
+    distributionOptions.push('Modular Estándar (src/screens, src/components, src/services)');
+  } else if (detectedProfile.archetype === 'CHROME_EXTENSION') {
+    // Chrome Extension MV3
+    distributionOptions.push('Web Extension Layout (src/background, src/popup, src/content, src/options, manifest.json) [⭐ Recomendado para Manifest V3]');
+    distributionOptions.push('Feature-Driven Extension (features/tab-sync, features/ui, features/storage)');
+  } else if (detectedProfile.archetype === 'SYSTEM_CLI_RUST_GO') {
+    // System CLIs
+    distributionOptions.push('System CLI Layout (src/cli, src/commands, src/core, src/terminal) [⭐ Recomendado para CLIs]');
+    distributionOptions.push('Capas Hexagonales (domain/, application/, infrastructure/, adapters/)');
   } else if (detectedProfile.archetype === 'DATA_PIPELINE_RAG') {
     // Data & RAG
     distributionOptions.push('Data Vault & Pipelines (ingest/, processing/, storage/, models/, vault/, tests/) [⭐ Recomendado para RAG y Datos]');

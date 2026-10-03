@@ -208,3 +208,78 @@ function getDefaultFleetForProvider(provider) {
       return ['gemini-3.1-pro', 'gemini-3.8-flash'];
   }
 }
+
+/**
+ * Emits .env.fleet.example content with the required API keys based on fleet allocation.
+ * @param {object} fleetPlan
+ * @returns {string}
+ */
+export function generateFleetEnvConfig(fleetPlan = {}) {
+  const models = fleetPlan.models || [];
+  const lines = [
+    '# ==============================================================================',
+    '# 🛸 ISS-ENTERPRISE MULTI-MODEL FLEET CREDENTIALS & ENDPOINTS',
+    '# ==============================================================================',
+    '# Populate the credentials corresponding to your tactical fleet allocation.',
+    ''
+  ];
+
+  const hasAnthropic = models.some(m => m.includes('claude'));
+  const hasDeepSeek = models.some(m => m.includes('deepseek'));
+  const hasOpenAI = models.some(m => m.includes('gpt') || m.includes('o3'));
+  const hasGemini = models.some(m => m.includes('gemini'));
+
+  lines.push('# Primary Orchestration & High-Reasoning Providers');
+  lines.push(`ANTHROPIC_API_KEY=${hasAnthropic ? 'sk-ant-api03-...' : ''}`);
+  lines.push(`DEEPSEEK_API_KEY=${hasDeepSeek ? 'sk-...' : ''}`);
+  lines.push(`GEMINI_API_KEY=${hasGemini ? 'AIzaSy...' : ''}`);
+  lines.push(`OPENAI_API_KEY=${hasOpenAI ? 'sk-proj-...' : ''}`);
+  lines.push('');
+
+  lines.push('# Local Ollama Endpoint (for air-gapped / economy models)');
+  lines.push('OLLAMA_HOST=http://localhost:11434');
+  lines.push('');
+
+  return lines.join('\n');
+}
+
+/**
+ * Generates an automated shell script to pull local Ollama models assigned to the fleet.
+ * @param {object} fleetPlan
+ * @returns {string}
+ */
+export function generateOllamaPullScript(fleetPlan = {}) {
+  const models = fleetPlan.models || [];
+  const ollamaModels = [];
+
+  for (const m of models) {
+    if (m.includes('qwen2.5-coder-7b')) ollamaModels.push('qwen2.5-coder:7b');
+    else if (m.includes('qwen2.5-coder-72b')) ollamaModels.push('qwen2.5-coder:32b');
+    else if (m.includes('deepseek-r1') && !models.some(x => x.includes('claude'))) ollamaModels.push('deepseek-r1:8b');
+  }
+
+  if (ollamaModels.length === 0) {
+    ollamaModels.push('qwen2.5-coder:7b');
+  }
+
+  const unique = Array.from(new Set(ollamaModels));
+
+  return `#!/usr/bin/env bash
+# ==============================================================================
+# 🤖 ISS-ENTERPRISE OLLAMA FLEET BOOTSTRAPPER
+# ==============================================================================
+set -e
+
+echo "🛸 Pulling local models for ISS-Enterprise tactical fleet..."
+
+which ollama >/dev/null 2>&1 || {
+  echo "❌ Error: Ollama is not installed. Visit https://ollama.com to install."
+  exit 1
+}
+
+${unique.map(m => `echo "⬇️  Pulling ${m}..."\nollama pull ${m}`).join('\n\n')}
+
+echo "✅ All local fleet models are pulled and ready for engagement!"
+`;
+}
+

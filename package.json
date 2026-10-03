@@ -24,6 +24,8 @@
     "start": "node ./bin/iss.js",
     "engage": "node ./bin/iss.js engage",
     "inspect": "node ./bin/iss.js inspect",
+    "doctor": "node ./bin/iss.js doctor",
+    "audit": "node ./bin/iss.js doctor",
     "test": "node ./test/suite.js"
   },
   "keywords": [

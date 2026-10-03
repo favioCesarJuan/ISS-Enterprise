@@ -13,6 +13,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { recommendSkillsForArchetype } from './skill-engine.js';
+import { generateFleetEnvConfig, generateOllamaPullScript } from './fleet-manager.js';
 
 /**
  * Emits full governance architecture into target project.
@@ -20,20 +21,25 @@ import { recommendSkillsForArchetype } from './skill-engine.js';
  * @param {object} profile Detected profile & user choices
  * @param {object} fleetPlan Fleet allocation
  * @param {object} mcpPlan MCP triad plan
+ * @param {object} options Execution options ({ dryRun: boolean })
  * @returns {string[]} List of generated files
  */
-export function generateGovernanceArchitecture(targetDir, profile = {}, fleetPlan = {}, mcpPlan = {}) {
+export function generateGovernanceArchitecture(targetDir, profile = {}, fleetPlan = {}, mcpPlan = {}, options = {}) {
   const root = path.resolve(targetDir);
   const created = [];
+  const isDryRun = Boolean(options.dryRun);
 
-  const writeFile = (relPath, content) => {
+  const writeFile = (relPath, content, mode) => {
+    created.push(relPath);
+    if (isDryRun) return;
+
     const full = path.join(root, relPath);
     const parent = path.dirname(full);
     if (!fs.existsSync(parent)) {
       fs.mkdirSync(parent, { recursive: true });
     }
-    fs.writeFileSync(full, content.trim() + '\n', 'utf-8');
-    created.push(relPath);
+    const writeOptions = mode ? { mode, encoding: 'utf-8' } : 'utf-8';
+    fs.writeFileSync(full, content.trim() + '\n', writeOptions);
   };
 
   const projectName = path.basename(root);
@@ -262,6 +268,17 @@ ${isHeadless ? '' : `| **Deanna Troi** | Design & UX | ${fleetPlan.officerRoster
   // 10. Models and MCP configs
   writeFile('config/models.config.json', JSON.stringify(fleetPlan, null, 2));
   writeFile('.mcp/mcp-servers.config.json', JSON.stringify(mcpPlan.recommendedConfig || {}, null, 2));
+  writeFile('.env.fleet.example', generateFleetEnvConfig(fleetPlan));
+  writeFile('scripts/pull-fleet-models.sh', generateOllamaPullScript(fleetPlan), 0o755);
+  writeFile('scripts/warmup-mcp.sh', `#!/usr/bin/env bash
+# 🔌 ISS-Enterprise: Warm up and index the Knowledge Graph
+set -e
+echo "🛰️  Warming up codebase-memory-mcp Knowledge Graph..."
+if command -v npx >/dev/null 2>&1; then
+  npx codebase-memory-mcp index . || echo "ℹ️  Knowledge graph indexer ready for next session."
+fi
+echo "✅ MCP Triad indexed and ready."
+`, 0o755);
 
   // 11. Git Pre-Commit Hook Auto-Arming
   const gitHooksDir = path.join(root, '.git', 'hooks');
