@@ -16,7 +16,10 @@ export const ARCHETYPES = {
   CONTENT_SSG_PORTAL: 'CONTENT_SSG_PORTAL',
   DATA_PIPELINE_RAG: 'DATA_PIPELINE_RAG',
   STANDALONE_SCRIPT_PROTOTYPE: 'STANDALONE_SCRIPT_PROTOTYPE',
-  BACKEND_API_ONLY: 'BACKEND_API_ONLY'
+  BACKEND_API_ONLY: 'BACKEND_API_ONLY',
+  MOBILE_CROSS_PLATFORM: 'MOBILE_CROSS_PLATFORM',
+  CHROME_EXTENSION: 'CHROME_EXTENSION',
+  SYSTEM_CLI_RUST_GO: 'SYSTEM_CLI_RUST_GO'
 };
 
 /**
@@ -89,6 +92,17 @@ export function detectProject(targetDir = process.cwd()) {
   const hasBiome = '@biomejs/biome' in allDeps || hasFile('biome.json');
   const hasDrizzle = 'drizzle-orm' in allDeps;
 
+  const hasManifest = hasFile('manifest.json');
+  let isChromeExtension = false;
+  if (hasManifest) {
+    try {
+      const mf = JSON.parse(fs.readFileSync(path.join(dir, 'manifest.json'), 'utf-8'));
+      if (mf.manifest_version === 2 || mf.manifest_version === 3) {
+        isChromeExtension = true;
+      }
+    } catch {}
+  }
+
   // Determine Archetype
   let archetype = ARCHETYPES.STANDALONE_SCRIPT_PROTOTYPE;
   let summary = '';
@@ -96,12 +110,21 @@ export function detectProject(targetDir = process.cwd()) {
   if ((hasTurbo || hasPnpmWorkspace) && (hasApps || hasPackages)) {
     archetype = ARCHETYPES.FULLSTACK_MONOREPO;
     summary = 'Complex Monorepo with workspaces and distributed packages.';
+  } else if (hasExpo || ('react-native' in allDeps && !hasNext)) {
+    archetype = ARCHETYPES.MOBILE_CROSS_PLATFORM;
+    summary = 'Mobile Cross-Platform Application (Expo / React Native).';
+  } else if (isChromeExtension) {
+    archetype = ARCHETYPES.CHROME_EXTENSION;
+    summary = 'Browser Web Extension (Manifest V3 / WebExtensions).';
   } else if (hasAstro) {
     archetype = ARCHETYPES.CONTENT_SSG_PORTAL;
     summary = 'Content & SSG Portal powered by Astro.';
   } else if (hasPython && (entries.some(e => /rag|scraper|ingest|pipeline/i.test(e)) || hasFile('astronauts_dump.txt') || hasDocker)) {
     archetype = ARCHETYPES.DATA_PIPELINE_RAG;
     summary = 'Data Engineering, Web Scraper, or RAG Pipeline.';
+  } else if ((hasGo || hasRust) && !hasNest && !hasNext && !hasExpo && !entries.some(e => /api|server|routes/i.test(e))) {
+    archetype = ARCHETYPES.SYSTEM_CLI_RUST_GO;
+    summary = 'High-Performance System CLI or Native Tool (Rust / Go).';
   } else if (hasGo || hasRust || (hasNest && !hasNext && !hasExpo)) {
     archetype = ARCHETYPES.BACKEND_API_ONLY;
     summary = 'Backend Service or API without dedicated frontend.';
