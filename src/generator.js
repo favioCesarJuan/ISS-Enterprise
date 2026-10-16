@@ -167,6 +167,28 @@ Enforces high standards of architecture, security, and verification for ${projec
 `);
   }
 
+  // 7. Tactical Instincts (Continuous Learning & Architectural Memory)
+  writeFile('.agents/instincts.md', `# 🧠 Tactical Instincts & Learned Heuristics for ${projectName}
+
+> **Source**: ISS-Enterprise Continuous Learning System (ECC Doctrine)  
+> **Purpose**: Dynamic repository memory capturing non-obvious architecture patterns, debugging discoveries, and avoided pitfalls.
+
+## 📌 Architecture & Design Instincts
+### [Instinct #1]: Minimalist Ponytail Diffs
+- Always prefer local refactoring and stdlib over new third-party dependencies.
+- Keep file diffs atomic and verified before proposing further modifications.
+
+### [Instinct #2]: Zero Continuous Polling
+- Never introduce \`setInterval(() => fetch(...))\`. Use WebSockets, SSE, or event-driven invalidation.
+
+### [Instinct #3]: Context Budget Conservation
+- Always deliberate and inspect code in English to maximize BPE token efficiency.
+- Deliver reports and high-level summaries in the Captain's native language.
+
+## 📝 Session Discoveries & Avoided Traps
+<!-- Agents should record newly uncovered project quirks or build pitfalls below -->
+`);
+
   // 8. Agents.md (Tailored Crew Roster & Folder Hierarchy)
   const isHeadless = profile.archetype === 'DATA_PIPELINE_RAG' || profile.archetype === 'BACKEND_API_ONLY';
 
@@ -229,11 +251,21 @@ ${isHeadless ? '' : `| **Deanna Troi** | Design & UX | ${fleetPlan.officerRoster
 3. **Architecture & File Placement**:
    - Follow structural hierarchy: **\`${distribution}\`**. Do not create arbitrary top-level folders.
 
+## 🔄 Research-First Engineering Loop (ECC Doctrine)
+Before writing or mutating code:
+1. **Plan & Trace**: Read relevant AST relations or codebase files. Formulate atomic plan.
+2. **Test First**: Write or identify the verification test reproducing the issue or defining acceptance.
+3. **Implement**: Minimalist diff strictly adhering to project conventions.
+4. **Verify**: Run \`pnpm test\` and ensure all tests pass.
+5. **Remember**: If an unexpected trap or quirk is discovered, record it in \`.agents/instincts.md\`.
+
 ## ⚡ Primary Commands
 - Run verification tests: \`pnpm test\` (or \`npm test\` / \`node test/suite.js\`)
+- Run governance & security audit: \`node ./bin/iss.js doctor\`
 - Check security shield: \`node .agents/hooks/tasha-security-shield.js --test\`
 - Check health & styling: \`node .agents/hooks/crusher-health-check.js --test\`
 - Tactical Crew Roster & Roles: Inspect \`Agents.md\`
+- Learned Project Memory: Consult \`.agents/instincts.md\`
 `);
 
   // B. .cursorrules (Cursor IDE)

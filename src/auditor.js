@@ -146,7 +146,7 @@ export function runGovernanceAudit(targetDir = process.cwd(), options = {}) {
     logWarn('No .agents/skills/ directory found.');
   }
 
-  // 5. Check Captains Log Ledger
+  // 5. Check Captains Log Ledger and Tactical Instincts
   const logFile = path.join(agentsDir, 'captains_log.json');
   if (fs.existsSync(logFile)) {
     try {
@@ -154,6 +154,57 @@ export function runGovernanceAudit(targetDir = process.cwd(), options = {}) {
       logPass(`Captains log ledger online with ${Array.isArray(logs) ? logs.length : 0} entries.`);
     } catch {
       logWarn('captains_log.json is present but invalid JSON.');
+    }
+  }
+
+  // 6. AgentShield Audit: Tactical Instincts (.agents/instincts.md)
+  const instinctsFile = path.join(agentsDir, 'instincts.md');
+  if (fs.existsSync(instinctsFile)) {
+    const instinctsContent = fs.readFileSync(instinctsFile, 'utf-8');
+    logPass(`Tactical instincts file active with ${instinctsContent.split('\n').filter(l => l.startsWith('### ')).length} learned heuristics.`);
+  } else {
+    logWarn('Missing .agents/instincts.md. Run `iss engage` or `iss init` to enable continuous learning.');
+  }
+
+  // 7. AgentShield Audit: MCP Servers Configuration & Sensitive Leaks
+  const mcpConfigFile = path.join(root, '.mcp', 'mcp-servers.config.json');
+  if (fs.existsSync(mcpConfigFile)) {
+    try {
+      const mcpConfig = JSON.parse(fs.readFileSync(mcpConfigFile, 'utf-8'));
+      const servers = mcpConfig.mcpServers || {};
+      const serverNames = Object.keys(servers);
+      logPass(`MCP Configuration verified: ${serverNames.length} server(s) configured (${serverNames.join(', ')}).`);
+
+      // Audit server commands for suspicious injection vectors
+      for (const [name, srv] of Object.entries(servers)) {
+        const cmdStr = `${srv.command || ''} ${(srv.args || []).join(' ')}`;
+        if (/\brm\s+-[rR]f|\bcurl\b.*\|\s*sh|\bchmod\s+777/i.test(cmdStr)) {
+          logFail(`AgentShield Warning: Insecure command pattern detected in MCP server '${name}': ${cmdStr}`);
+        }
+        // Check for exposed plaintext tokens in env configuration
+        if (srv.env) {
+          for (const [envVar, envVal] of Object.entries(srv.env)) {
+            if (/ghp_[a-zA-Z0-9]{30,}|sk-[a-zA-Z0-9]{20,}/.test(String(envVal))) {
+              logFail(`AgentShield Warning: Plaintext secret detected in MCP server '${name}' env (${envVar}). Use environment variables.`);
+            }
+          }
+        }
+      }
+    } catch (e) {
+      logFail(`MCP configuration file .mcp/mcp-servers.config.json is corrupted: ${e.message}`);
+    }
+  } else {
+    logWarn('No .mcp/mcp-servers.config.json found. Run `iss mcps` to provision sensor triad.');
+  }
+
+  // 8. AgentShield Audit: Git repository secret hygiene
+  const envFile = path.join(root, '.env');
+  const gitignoreFile = path.join(root, '.gitignore');
+  if (fs.existsSync(envFile)) {
+    if (!fs.existsSync(gitignoreFile) || !fs.readFileSync(gitignoreFile, 'utf-8').includes('.env')) {
+      logFail('AgentShield Alert: .env file exists on disk but is NOT ignored in .gitignore! Secrets at risk.');
+    } else {
+      logPass('.env file is properly ignored by .gitignore.');
     }
   }
 

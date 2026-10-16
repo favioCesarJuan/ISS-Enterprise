@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.0] - 2026-10-16
+
+### Added
+- **Tactical Instincts & Continuous Learning (`.agents/instincts.md`)**: Dynamic repository memory capturing non-obvious architecture patterns, debugging discoveries, and avoided pitfalls between agent sessions (ECC methodology).
+- **AgentShield MCP & Secret Leaks Auditor (`iss doctor` / `iss audit`)**: Extended governance auditor with security audits for MCP command injection patterns, plaintext secret leaks in `.mcp/mcp-servers.config.json`, and `.gitignore` secret coverage.
+- **Research-First Engineering Loop**: Integrated disciplined development loop (`Plan -> Test -> Implement -> Verify -> Remember`) into generated `CLAUDE.md` and multi-AI contracts.
+- **Test Suite Expansion**: Added comprehensive test coverage for AgentShield leak detection and continuous learning heuristics (21/21 tests passing).
+
+---
+
 ## [1.2.0] - 2026-10-02
 
 ### Added
