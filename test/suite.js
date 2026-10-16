@@ -340,10 +340,22 @@ runTest('Scaffolder & Generator: End-to-end greenfield creation with live hooks 
   assert.ok(fs.existsSync(path.join(testProjectDir, 'scripts/pull-fleet-models.sh')), 'scripts/pull-fleet-models.sh must be generated');
   assert.ok(fs.existsSync(path.join(testProjectDir, 'scripts/warmup-mcp.sh')), 'scripts/warmup-mcp.sh must be generated');
 
-  // Verify Auditor (iss doctor) on healthy project
+  // Verify Tactical Instincts (.agents/instincts.md)
+  assert.ok(fs.existsSync(path.join(testProjectDir, '.agents/instincts.md')), '.agents/instincts.md must be generated');
+  const instinctsContent = fs.readFileSync(path.join(testProjectDir, '.agents/instincts.md'), 'utf-8');
+  assert.ok(instinctsContent.includes('Tactical Instincts & Learned Heuristics'));
+  assert.ok(instinctsContent.includes('Minimalist Ponytail Diffs'));
+
+  // Verify CLAUDE.md incorporates Research-First Loop (ECC Doctrine)
+  assert.ok(claudeContent.includes('Research-First Engineering Loop (ECC Doctrine)'));
+  assert.ok(claudeContent.includes('Plan & Trace'));
+  assert.ok(claudeContent.includes('.agents/instincts.md'));
+
+  // Verify Auditor (iss doctor / audit) with AgentShield checks on healthy project
   const healthyAudit = runGovernanceAudit(testProjectDir);
   assert.equal(healthyAudit.ok, true, 'Healthy project must pass doctor audit');
-  assert.ok(healthyAudit.passed.length >= 3);
+  assert.ok(healthyAudit.passed.some(p => p.includes('instincts file active')));
+  assert.ok(healthyAudit.passed.some(p => p.includes('MCP Configuration verified')));
 
   // Clean up testProjectDir
   fs.rmSync(tmpBase, { recursive: true, force: true });
@@ -389,6 +401,38 @@ runTest('Auditor: Detects styling drift when forbidden dependency is injected', 
   assert.ok(audit.failures.some(f => f.includes('TailwindCSS found in package.json but forbidden')));
 
   fs.rmSync(driftDir, { recursive: true, force: true });
+});
+
+// -----------------------------------------------------------------------------
+// Test 11: AgentShield MCP & Secret Leak Detection
+// -----------------------------------------------------------------------------
+runTest('Auditor: AgentShield detects insecure MCP command injection and exposed secrets', () => {
+  const shieldDir = fs.mkdtempSync(path.join(os.tmpdir(), 'iss-shield-'));
+  const agentsDir = path.join(shieldDir, '.agents');
+  const mcpDir = path.join(shieldDir, '.mcp');
+  fs.mkdirSync(agentsDir, { recursive: true });
+  fs.mkdirSync(mcpDir, { recursive: true });
+  fs.writeFileSync(path.join(agentsDir, 'hooks.json'), JSON.stringify({ framework: 'ISS-Enterprise', hooks: [] }));
+
+  // Insecure MCP server configuration with dangerous command and plaintext token
+  fs.writeFileSync(path.join(mcpDir, 'mcp-servers.config.json'), JSON.stringify({
+    mcpServers: {
+      'rogue-server': {
+        command: 'sh',
+        args: ['-c', 'rm -rf /tmp/test'], // Dangerous command
+        env: {
+          GITHUB_TOKEN: 'ghp_123456789012345678901234567890123456' // Plaintext secret
+        }
+      }
+    }
+  }));
+
+  const audit = runGovernanceAudit(shieldDir);
+  assert.equal(audit.ok, false, 'Shield audit must fail on rogue MCP configuration');
+  assert.ok(audit.failures.some(f => f.includes('Insecure command pattern detected in MCP server')));
+  assert.ok(audit.failures.some(f => f.includes('Plaintext secret detected in MCP server')));
+
+  fs.rmSync(shieldDir, { recursive: true, force: true });
   if (fs.existsSync(fixturesDir)) {
     fs.rmSync(fixturesDir, { recursive: true, force: true });
   }

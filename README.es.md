@@ -173,10 +173,11 @@ pnpm engage
 ```
 
 #### 🛡️ ¿Cómo funciona la Ejecución Automática? (Defensa Táctica Multinivel)
-Al ejecutar `engage`, ISS-Enterprise levanta automáticamente tres niveles de defensa:
-1. **Contratos para Múltiples Motores de IA (`Agents.md`, `CLAUDE.md`, `.cursorrules`, `.windsurfrules`)**: Sintetiza automáticamente las directivas y guardrails para cualquier entorno o asistente de IA (Claude Code/Desktop, Cursor, Windsurf, Antigravity, Gemini). Claude o Cursor respetarán de inmediato el minimalismo Ponytail, los estándares de testing y los comandos prohibidos.
-2. **Escudo de Runtime para Agentes (`.agents/hooks.json`)**: Intercepta en tiempo real las herramientas de los agentes de IA. Comandos destructivos como `rm -rf /` o inyecciones indebidas son bloqueados antes de tocar tu sistema operativo.
-3. **Escudo Nativo de Git Pre-Commit (`.git/hooks/pre-commit`)**: Vinculado automáticamente al repositorio Git. Cada vez que tú o un agente intentan hacer un `git commit`:
+Al ejecutar `engage`, ISS-Enterprise levanta automáticamente cuatro niveles de defensa:
+1. **Contratos para Múltiples Motores de IA (`Agents.md`, `CLAUDE.md`, `.cursorrules`, `.windsurfrules`)**: Sintetiza automáticamente las directivas y guardrails para cualquier entorno o asistente de IA (Claude Code/Desktop, Cursor, Windsurf, Antigravity, Gemini). Incorpora el **Bucle de Ingeniería con Investigación Previa** (`Plan -> Test -> Implement -> Verify -> Remember`).
+2. **Instintos Tácticos y Memoria Continua (`.agents/instincts.md`)**: Registro persistente de descubrimientos arquitectónicos, lecciones aprendidas y trampas evitadas entre sesiones de agentes.
+3. **Escudos de Runtime y Auditoría AgentShield (`.agents/hooks.json` e `iss doctor`)**: Intercepta en tiempo real las herramientas de los agentes de IA. Bloquea comandos destructivos y audita servidores MCP contra inyecciones y fuga de credenciales en texto plano.
+4. **Escudo Nativo de Git Pre-Commit (`.git/hooks/pre-commit`)**: Vinculado automáticamente al repositorio Git. Cada vez que tú o un agente intentan hacer un `git commit`:
    ```text
    $ git commit -m "feat: actualización táctica"
    🛡️  [TASHA YAR]: Tactical shield online.
