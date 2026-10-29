@@ -1,0 +1,46 @@
+rules:
+  - id: iss-prohibit-continuous-polling
+    languages: [javascript, typescript]
+    message: "🚨 [BEVERLY CRUSHER]: Continuous polling via setInterval is prohibited by the Ponytail Minimalist Protocol. Use WebSockets, SSE, or reactive event triggers."
+    severity: ERROR
+    patterns:
+      - pattern-either:
+          - pattern: setInterval($FN, ...)
+      - pattern-regex: (fetch|axios|http\.get|https\.get|request)\s*\(
+
+  - id: iss-enforce-node-prefix
+    languages: [javascript, typescript]
+    message: "⚠️ [GEORDI LA FORGE]: Core engine hygiene directive: Always use canonical 'node:' prefix for core Node.js modules."
+    severity: WARNING
+    patterns:
+      - pattern-either:
+          - pattern: import $X from '$MOD'
+          - pattern: const $X = require('$MOD')
+      - pattern-regex: "['\"](fs|path|child_process|crypto|os|util|events|stream|buffer|http|https|net|tls|url|dns|readline)['\"]"
+
+  - id: iss-tasha-command-injection
+    languages: [javascript, typescript]
+    message: "🚨 [TASHA YAR]: Command injection risk detected in child_process.exec with unsanitized variables. Use execFile or parameterized inputs."
+    severity: ERROR
+    patterns:
+      - pattern-either:
+          - pattern: child_process.exec($CMD + $VAR, ...)
+          - pattern: child_process.exec(`${$CMD}...`, ...)
+          - pattern: exec($CMD + $VAR, ...)
+          - pattern: exec(`${$CMD}...`, ...)
+
+  - id: iss-prohibit-eval
+    languages: [javascript, typescript]
+    message: "🚨 [TASHA YAR & DATA]: Code execution via eval or new Function is prohibited by ISS Tactical Security perimeter."
+    severity: ERROR
+    patterns:
+      - pattern-either:
+          - pattern: eval(...)
+          - pattern: new Function(...)
+
+  - id: iss-secret-leak-guard
+    languages: [javascript, typescript]
+    message: "🚨 [TASHA YAR]: Hardcoded credentials detected. Use process.env or secret manager."
+    severity: ERROR
+    patterns:
+      - pattern-regex: (?i)(ai_key|api_key|secret_key|private_key|auth_token)\s*[:=]\s*['"][a-zA-Z0-9_\-]{20,}['"]
