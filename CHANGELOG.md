@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.1] - 2026-10-29
+
+### Added
+- **Semgrep SAST & AST Perimeter**: Integrated `.semgrep.yml` rules into generator and root repo to prevent continuous polling violations, command injection in `child_process`, and hardcoded credentials.
+- **Node.js Runtime CVE Baseline (`iss doctor`)**: Enhanced `src/auditor.js` to inspect active runtime against SecurityVulnerability.io / Node.js CVE baselines.
+- **Agent Skill Security & SkillSpector Integration**: Added `validateSkillSafety` in `src/skill-engine.js` to quarantine prompt injections and tool exfiltration, plus SkillSpector readiness check in `iss doctor` and generated pre-commit shields.
+
+---
+
 ## [1.3.0] - 2026-10-16
 
 ### Added

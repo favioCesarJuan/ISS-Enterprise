@@ -312,15 +312,44 @@ fi
 echo "✅ MCP Triad indexed and ready."
 `, 0o755);
 
-  // 11. Git Pre-Commit Hook Auto-Arming
+  // 11. Semgrep Tactical SAST Configuration
+  writeFile('.semgrep.yml', `rules:
+  - id: iss-prohibit-continuous-polling
+    languages: [javascript, typescript]
+    message: "🚨 [BEVERLY CRUSHER]: Continuous polling via setInterval is prohibited by the Ponytail Minimalist Protocol."
+    severity: ERROR
+    patterns:
+      - pattern-either:
+          - pattern: setInterval($FN, ...)
+      - pattern-regex: (fetch|axios|http\\.get|https\\.get|request)\\s*\\(
+
+  - id: iss-tasha-command-injection
+    languages: [javascript, typescript]
+    message: "🚨 [TASHA YAR]: Command injection risk detected in child_process.exec."
+    severity: ERROR
+    patterns:
+      - pattern-either:
+          - pattern: child_process.exec($CMD + $VAR, ...)
+          - pattern: child_process.exec(\`\${$CMD}...\`, ...)
+          - pattern: exec($CMD + $VAR, ...)
+          - pattern: exec(\`\${$CMD}...\`, ...)
+`);
+
+  // 12. Git Pre-Commit Hook Auto-Arming
   const gitHooksDir = path.join(root, '.git', 'hooks');
   if (fs.existsSync(gitHooksDir)) {
     try {
       const preCommitPath = path.join(gitHooksDir, 'pre-commit');
       const hookContent = `#!/bin/sh
-# 🛡️ ISS-Enterprise Tactical Git Pre-Commit Guardrail
+# 🛡️ ISS-Enterprise Tactical Git Pre-Commit Guardrail (Tasha Yar & Semgrep)
 node .agents/hooks/tasha-security-shield.js --test || exit 1
 node .agents/hooks/crusher-health-check.js --test || exit 1
+if command -v semgrep >/dev/null 2>&1 && [ -f .semgrep.yml ]; then
+  semgrep scan --config .semgrep.yml --error --disable-version-check --metrics=off . || exit 1
+fi
+if command -v skillspector >/dev/null 2>&1 && [ -d .agents/skills ]; then
+  skillspector scan .agents/skills/ --min-score 80 || exit 1
+fi
 `;
       fs.writeFileSync(preCommitPath, hookContent, { mode: 0o755 });
       created.push('.git/hooks/pre-commit');

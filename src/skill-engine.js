@@ -113,6 +113,26 @@ export function createNewSkill(targetDir, name, options = {}) {
 }
 
 /**
+ * Validates skill content for malicious prompt injection or credential harvesting.
+ * @param {string} content
+ * @returns {{ safe: boolean, reason?: string }}
+ */
+export function validateSkillSafety(content = '') {
+  const dangerous = [
+    /ignore\s+(all\s+)?previous\s+instructions/i,
+    /disregard\s+(the\s+)?system\s+prompt/i,
+    /curl\s+-[dF]\s+['"]?@/i,
+    /cat\s+~?\/\.ssh\//i
+  ];
+  for (const p of dangerous) {
+    if (p.test(content)) {
+      return { safe: false, reason: `🚨 [TASHA YAR]: Malicious prompt pattern detected: ${p.source}` };
+    }
+  }
+  return { safe: true };
+}
+
+/**
  * Compacts and fuses multiple raw skills into the canonical domain set.
  * Detects duplicates, collisions, and merges them into clean pillars.
  * @param {string|Array<{ name: string, content: string }>} inputDirOrList
@@ -149,6 +169,12 @@ export function compactAndFuseSkills(inputDirOrList = []) {
   const domains = {};
 
   for (const skill of rawSkills) {
+    const safety = validateSkillSafety(skill.content);
+    if (!safety.safe) {
+      console.warn(`🛡️  [TASHA YAR]: Quarantined unsafe skill '${skill.name}': ${safety.reason}`);
+      continue;
+    }
+
     const domain = classifySkillToDomain(skill.name, skill.content);
     if (!domains[domain]) {
       domains[domain] = [];
@@ -186,7 +212,7 @@ ${fusedDirectives}
 function classifySkillToDomain(name = '', content = '') {
   const text = (name + ' ' + content).toLowerCase();
 
-  if (/security|semgrep|vulnerability|audit|hardening|strix|auth/i.test(text)) {
+  if (/security|semgrep|skillspector|vulnerability|audit|hardening|strix|auth/i.test(text)) {
     return 'security-guardrails';
   }
   if (/design|ui|ux|css|tailwind|style|apple|typography|color|contrast|a11y/i.test(text)) {
