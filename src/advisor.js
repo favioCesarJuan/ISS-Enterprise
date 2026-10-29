@@ -5,9 +5,30 @@
  * Formulates tailored questions with guaranteed [Otra / Custom] write-ins.
  * When a custom choice is made, runs heuristic investigation to infer optimal
  * file distribution, linters, compiler flags, and architecture patterns.
- * Suggests the optimal folder structure according to the detected technology.
+ * Suggests the optimal folder structure according to the detected technology
+ * and project lifecycle (Greenfield, In-Construction, Maintenance).
  * ==============================================================================
  */
+
+import fs from 'node:fs';
+import path from 'node:path';
+import readline from 'node:readline';
+import process from 'node:process';
+import { execSync } from 'node:child_process';
+
+export const PROJECT_LIFECYCLE = {
+  GREENFIELD: 'greenfield',
+  IN_CONSTRUCTION: 'construction',
+  MAINTENANCE: 'maintenance'
+};
+
+function promptUser(query) {
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  return new Promise(resolve => rl.question(query, ans => {
+    rl.close();
+    resolve(ans.trim());
+  }));
+}
 
 // Heuristic knowledge database for autonomous investigation of custom technologies
 const TECH_KNOWLEDGE_BASE = {
@@ -125,6 +146,22 @@ export function getTailoredQuestions(detectedProfile) {
   const hasFrontend = stack.hasNext || stack.hasAstro || stack.hasExpo;
 
   const questions = [];
+
+  // Question 0: Project Lifecycle Stage
+  questions.push({
+    id: 'project_lifecycle',
+    title: '🏗️ ¿En qué etapa del ciclo de vida se encuentra el proyecto?',
+    options: [
+      isGreenfield
+        ? 'Proyecto Nuevo (Greenfield): Comenzando desde cero sin dependencias previas [Recomendado]'
+        : 'Proyecto Nuevo (Greenfield): Comenzando desde cero sin dependencias previas',
+      !isGreenfield
+        ? 'En Construcción (Activo): Desarrollo activo, agregando módulos y stack en evolución [Recomendado]'
+        : 'En Construcción (Activo): Desarrollo activo, agregando módulos y stack en evolución',
+      'Mantenimiento (Legacy / Maduro): Base de código establecida, estabilidad crítica y foco en seguridad',
+      '[Otra / Personalizada]'
+    ]
+  });
 
   // Question 1: Greenfield purpose OR Adoption confirmation
   if (isGreenfield) {
@@ -290,4 +327,177 @@ export function getTailoredQuestions(detectedProfile) {
   });
 
   return questions;
+}
+
+/**
+ * Heuristically inspects a target directory to determine project maturity and lifecycle
+ */
+export function detectProjectLifecycle(targetDir = process.cwd()) {
+  const resolved = path.resolve(targetDir);
+  const exists = (rel) => fs.existsSync(path.join(resolved, rel));
+
+  const hasPkg = exists('package.json');
+  const hasGit = exists('.git');
+
+  let commitCount = 0;
+  if (hasGit) {
+    try {
+      commitCount = parseInt(execSync('git rev-list --count HEAD 2>/dev/null', { cwd: resolved, encoding: 'utf-8' }).trim(), 10) || 0;
+    } catch {}
+  }
+
+  let rootFiles = [];
+  try {
+    rootFiles = fs.readdirSync(resolved).filter(f => !f.startsWith('.git') && f !== 'node_modules');
+  } catch {}
+
+  let inferredStage = PROJECT_LIFECYCLE.IN_CONSTRUCTION;
+  if (rootFiles.length <= 3 && commitCount <= 2) {
+    inferredStage = PROJECT_LIFECYCLE.GREENFIELD;
+  } else if (commitCount > 50 || exists('CHANGELOG.md') || exists('dist') || exists('release.config.js')) {
+    inferredStage = PROJECT_LIFECYCLE.MAINTENANCE;
+  }
+
+  const hasTests = exists('test') || exists('tests') || exists('vitest.config.ts') || exists('jest.config.js');
+  const hasLinter = exists('eslint.config.js') || exists('.eslintrc.json') || exists('biome.json');
+  const hasMcp = exists('.mcp/mcp-servers.config.json');
+  const hasCrew = exists('.agents/crew');
+  const hasSemgrep = exists('.semgrep.yml') || exists('.agents/rules/semgrep-starfleet.yml');
+  const hasGitHooks = exists('.git/hooks/pre-commit');
+
+  return {
+    inferredStage,
+    commitCount,
+    hasPkg,
+    hasGit,
+    gaps: {
+      hasTests,
+      hasLinter,
+      hasMcp,
+      hasCrew,
+      hasSemgrep,
+      hasGitHooks
+    }
+  };
+}
+
+/**
+ * Generates actionable gap recommendations based on lifecycle stage
+ */
+export function generateRecommendations(stage, gaps) {
+  const recommendations = [];
+
+  if (stage === PROJECT_LIFECYCLE.GREENFIELD) {
+    recommendations.push({
+      category: 'Arquitectura & Scaffolding',
+      title: 'Scaffolding Greenfield con Atomic Design / Modular Clean',
+      details: 'Ejecuta `iss new <name>` para forjar una estructura limpia con cero deuda técnica.'
+    });
+    recommendations.push({
+      category: 'Linters & Type Safety',
+      title: 'Biome o ESLint + TypeScript Strict',
+      details: 'Configura formateo y análisis estático antes de comenzar la codificación.'
+    });
+    recommendations.push({
+      category: 'Testing Framework',
+      title: 'Node Native Test Runner o Vitest',
+      details: 'Integra pruebas unitarias continuas con `pnpm test`.'
+    });
+  } else if (stage === PROJECT_LIFECYCLE.IN_CONSTRUCTION) {
+    recommendations.push({
+      category: 'Escudos de Desarrollo',
+      title: 'Activar Escudo Perimetral de Tasha Yar (`iss engage`)',
+      details: 'Despliega hooks de pre-commit y circuit breaker para proteger el código en construcción activa.'
+    });
+    if (!gaps.hasMcp) {
+      recommendations.push({
+        category: 'Tríada MCP',
+        title: 'Configurar Indispensable MCP Triad (`iss mcps`)',
+        details: 'Agrega Context7, Codebase Memory y GitHub MCP para acelerar el desarrollo con IA.'
+      });
+    }
+    if (!gaps.hasTests) {
+      recommendations.push({
+        category: 'Testing',
+        title: 'Incorporar Suite de Pruebas Automatizadas',
+        details: 'Crea pruebas unitarias para módulos críticos en desarrollo.'
+      });
+    }
+  } else {
+    // MAINTENANCE
+    recommendations.push({
+      category: 'Auditoría & Hardening',
+      title: 'Auditoría Periódica de Seguridad (`iss doctor`)',
+      details: 'Verifica la integridad de los escudos, detecta desviaciones en hooks y audita dependencias.'
+    });
+    recommendations.push({
+      category: 'Gobernanza de Skills',
+      title: 'Compactar y Fusionar Habilidades (`iss skills compact`)',
+      details: 'Optimiza el consumo de contexto consolidando skills dispersas en dominios canónicos.'
+    });
+    recommendations.push({
+      category: 'SAST & Semgrep',
+      title: 'Análisis Estático Continuo Semgrep',
+      details: 'Previene regresiones, vulnerabilidades OWASP y polling destructivo en bases de código maduras.'
+    });
+  }
+
+  return recommendations;
+}
+
+/**
+ * Runs interactive or automatic lifecycle advisor
+ */
+export async function runLifecycleAdvisor(targetDir = process.cwd(), options = {}) {
+  const resolved = path.resolve(targetDir);
+  console.log(`\n\x1b[38;5;220m==============================================================================\x1b[0m`);
+  console.log(`\x1b[1m⚔️ ISS-ENTERPRISE: ASESOR TÁCTICO DE CICLO DE VIDA (TASHA YAR & CONSEJO)\x1b[0m`);
+  console.log(`\x1b[38;5;220m==============================================================================\x1b[0m\n`);
+
+  const detection = detectProjectLifecycle(resolved);
+  console.log(`\x1b[1mProyecto inspeccionado:\x1b[0m \x1b[36m${resolved}\x1b[0m`);
+  console.log(`- Commits detectados: \x1b[1m${detection.commitCount}\x1b[0m`);
+  console.log(`- Etapa sugerida por sensores: \x1b[32m${detection.inferredStage.toUpperCase()}\x1b[0m\n`);
+
+  let chosenStage = detection.inferredStage;
+
+  if (!options.yes && process.stdin.isTTY) {
+    console.log(`\x1b[1m¿En qué etapa del ciclo de vida se encuentra el proyecto?\x1b[0m`);
+    console.log(`1) Greenfield (Nuevo / Desde cero)`);
+    console.log(`2) In-Construction (En construcción / Desarrollo activo)`);
+    console.log(`3) Maintenance (Mantenimiento / Estable / Legacy)`);
+    const ans = await promptUser(`Selecciona [1-3, defecto=${chosenStage === 'greenfield' ? 1 : chosenStage === 'construction' ? 2 : 3}]: `);
+    if (ans === '1') chosenStage = PROJECT_LIFECYCLE.GREENFIELD;
+    else if (ans === '2') chosenStage = PROJECT_LIFECYCLE.IN_CONSTRUCTION;
+    else if (ans === '3') chosenStage = PROJECT_LIFECYCLE.MAINTENANCE;
+  }
+
+  console.log(`\n\x1b[1mGenerando diagnóstico táctico para etapa:\x1b[0m \x1b[38;5;220m${chosenStage.toUpperCase()}\x1b[0m...\n`);
+  const recommendations = generateRecommendations(chosenStage, detection.gaps);
+
+  console.log(`\x1b[1m📊 DIAGNÓSTICO DE BRECHAS Y RECOMENDACIONES TÁCTICAS:\x1b[0m`);
+  recommendations.forEach((rec, idx) => {
+    console.log(`\n\x1b[38;5;220m[${idx + 1}] ${rec.category}: \x1b[1m${rec.title}\x1b[0m`);
+    console.log(`    ${rec.details}`);
+  });
+
+  const profile = {
+    evaluatedAt: new Date().toISOString(),
+    lifecycleStage: chosenStage,
+    targetDir: resolved,
+    metrics: {
+      commitCount: detection.commitCount,
+      gaps: detection.gaps
+    },
+    recommendations
+  };
+
+  const agentsDir = path.join(resolved, '.agents');
+  if (!fs.existsSync(agentsDir)) {
+    fs.mkdirSync(agentsDir, { recursive: true });
+  }
+  const outFile = path.join(agentsDir, 'project-profile.json');
+  fs.writeFileSync(outFile, JSON.stringify(profile, null, 2), 'utf-8');
+  console.log(`\n\x1b[32m✔ Perfil de ciclo de vida guardado en:\x1b[0m \x1b[36m${outFile}\x1b[0m\n`);
+  return profile;
 }

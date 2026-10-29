@@ -12,7 +12,7 @@ Bienvenido al **Manual de Operaciones Tácticas de ISS-Enterprise**. Esta guía 
    - [Creación de Skills Personalizadas (`skills create`)](#creación-de-skills-personalizadas)
    - [Anatomía de un Archivo `SKILL.md`](#anatomía-de-un-archivo-skillmd)
    - [Compactación Anticolisiones (`skills compact`)](#compactación-anticolisiones)
-   - [Los 6 Pilares Canónicos](#los-6-pilares-canónicos)
+   - [Los 8 Pilares Canónicos](#los-8-pilares-canónicos)
 2. [Tríada de Sensores MCP y Extensibilidad](#2-tríada-de-sensores-mcp-y-extensibilidad)
    - [La Tríada Indispensable](#la-tríada-indispensable)
    - [Generación de Configuración (`iss mcps`)](#generación-de-configuración)
@@ -25,6 +25,11 @@ Bienvenido al **Manual de Operaciones Tácticas de ISS-Enterprise**. Esta guía 
 4. [Orquestación de Flota Heterogénea y Presupuesto de Contexto](#4-orquestación-de-flota-heterogénea-y-presupuesto-de-contexto)
    - [Asignación de Roles por Ventana de Contexto](#asignación-de-roles-por-ventana-de-contexto)
    - [Protocolo de Lenguaje Cognitivo (Ahorro de Tokens BPE)](#protocolo-de-lenguaje-cognitivo)
+5. [Asesor Táctico de Ciclo de Vida (`iss advise`)](#5-asesor-táctico-de-ciclo-de-vida-iss-advise)
+   - [Diagnóstico Greenfield / Desarrollo Activo / Mantenimiento](#diagnóstico-greenfield--desarrollo-activo--mantenimiento)
+6. [Actualizador Consultado con Cuádruple Barrera de Seguridad (`iss update`)](#6-actualizador-consultado-con-cuádruple-barrera-de-seguridad-iss-update)
+   - [La Cuádruple Barrera Táctica y Rollback Atómico](#la-cuádruple-barrera-táctica-y-rollback-atómico)
+7. [Manifiestos Físicos de la Tripulación (`.agents/crew/`)](#7-manifiestos-físicos-de-la-tripulación-agentscrew)
 
 ---
 
@@ -88,9 +93,9 @@ pnpm dlx iss-enterprise skills compact
 El motor de compactación (`src/skill-engine.js`):
 1. Inspecciona los directorios en `.agents/skills/`.
 2. Analiza semánticamente las reglas y delimita las fronteras de dominio.
-3. Fusiona las directivas en los **6 pilares canónicos**, eliminando duplicidades y entregando un conjunto de reglas limpio y coherente.
+3. Fusiona las directivas en los **8 pilares canónicos**, eliminando duplicidades y entregando un conjunto de reglas limpio y coherente.
 
-### Los 6 Pilares Canónicos
+### Los 8 Pilares Canónicos
 
 | Pilar Canónico | Oficial Asignado | Enfoque Operativo |
 | :--- | :--- | :--- |
@@ -100,6 +105,8 @@ El motor de compactación (`src/skill-engine.js`):
 | `fullstack-architecture` | Tte. Cmdte. Geordi La Forge | Monorepos, límites entre paquetes, Dockerfiles, caché de compilación |
 | `data-engineering-and-rag` | Tte. Cmdte. Data | Recuperación vectorial, pipelines ETL, Chroma/Qdrant, streaming de datos |
 | `workflow-and-coordination` | Comandante William T. Riker | TDD estricto, desglose de tareas, verificación con Vitest/Pytest/Playwright |
+| `skill-governance-lifecycle` | Tte. Worf & Tte. Cmdte. Geordi | Contratos de ciclo de vida, detección de desviaciones, auditoría |
+| `meta-critic-q` | Q (El Continuo Q) | Meta-evaluación omnisciente, auditoría temporal, eliminación de sesgos |
 
 ---
 
@@ -284,3 +291,74 @@ Cuando se interactúa con desarrolladores hispanohablantes:
 1. **Comunicación Externa**: Los agentes interactúan con el Capitán humano en español para máxima fluidez y claridad estratégica.
 2. **Deliberación Interna y AST**: El razonamiento entre modelos, las trazas de pensamiento y las inspecciones de código se ejecutan en inglés.
 3. **Ahorro de Tokens BPE**: La tokenización en inglés consume **entre un 30% y un 50% menos de tokens Byte Pair Encoding (BPE)** que los idiomas romances para expresar la misma lógica algorítmica, reduciendo costes y acelerando las respuestas.
+
+---
+
+## 5. Asesor Táctico de Ciclo de Vida (`iss advise`)
+
+El comando `iss advise` ejecuta una inspección heurística del espacio de trabajo para diagnosticar la madurez del proyecto y brindar recomendaciones adaptadas a su contexto:
+
+```bash
+# Ejecución interactiva:
+iss advise
+
+# Ejecución automática aceptando recomendaciones óptimas:
+iss advise --yes
+```
+
+### Diagnóstico Greenfield / Desarrollo Activo / Mantenimiento
+
+1. **Greenfield (Desde Cero / Directorio Vacío)**:
+   - Evalúa la estructura de carpetas y el propósito del stack.
+   - Sugiere separación limpia en capas (`src/controllers`, `src/domain`, `src/infrastructure` o Diseño Atómico para Astro).
+   - Recomienda Biome o ESLint estricto con TypeScript desde el primer día.
+   - Recomienda configurar la suite de tests de inmediato (`node:test` o Vitest).
+2. **En Construcción (Desarrollo Activo)**:
+   - Realiza un análisis de brechas verificando si faltan tests, hooks de pre-commit o la Tríada MCP.
+   - Sugiere activar `iss engage` e `iss mcps` sin interrumpir el flujo de desarrollo existente.
+3. **Mantenimiento (Estable / Legacy / Producción)**:
+   - Se enfoca estrictamente en refactorización segura y prevención de regresiones.
+   - Aplica reglas Semgrep SAST para evitar sondeo continuo (`setInterval`) y llamadas inseguras al sistema.
+   - Audita el baseline de CVEs del runtime de Node.js y congela las fronteras de dependencias.
+
+Los resultados se guardan de forma persistente en `.agents/project-profile.json`.
+
+---
+
+## 6. Actualizador Consultado con Cuádruple Barrera de Seguridad (`iss update`)
+
+Las actualizaciones del framework **NUNCA son silenciosas ni automáticas**. Requieren consentimiento humano explícito y deben superar todas las pruebas en cuarentena:
+
+```bash
+# Verificar desviaciones respecto al repositorio upstream:
+iss update --check
+
+# Ejecutar actualización interactiva:
+iss update
+```
+
+### La Cuádruple Barrera Táctica y Rollback Atómico
+
+1. **Barrera 1 - Escudo Táctico de Tasha Yar**: Inspecciona archivos entrantes buscando patrones destructivos (`rm -rf`, pipes a shell, escrituras a rutas restringidas).
+2. **Barrera 2 - Semgrep SAST**: Analiza los archivos en cuarentena con `.semgrep.yml` en busca de fugas de secretos, sondeo continuo o comandos inseguros.
+3. **Barrera 3 - Cuarentena de Seguridad de Skills**: Veta todas las habilidades contra inyecciones de prompt o secuestro de herramientas.
+4. **Barrera 4 - Baseline de CVEs en Node.js**: Valida la compatibilidad del entorno contra la base de datos de vulnerabilidades conocidas.
+
+**Backup y Rollback Atómico**: Antes de aplicar cualquier cambio, el directorio `.agents` actual se respalda automáticamente en `.agents.backup.<timestamp>`. Si las pruebas de verificación fallan, el actualizador restaura el respaldo atómicamente.
+
+---
+
+## 7. Manifiestos Físicos de la Tripulación (`.agents/crew/`)
+
+Cada oficial del Universo Espejo cuenta con su propio expediente individual en Markdown estructurado dentro de `.agents/crew/`:
+- `riker-orchestrator.md`: Orquestador Principal de IA y Planificador Táctico.
+- `data-systems-logic.md`: Sistemas Lógicos, Algoritmos y Arquitecto RAG.
+- `geordi-architect.md`: Ingeniero Jefe, Monorepos e Infraestructura.
+- `tasha-perimeter-shield.md`: Escudo Perimétrico Defensivo e Intercepción de Comandos.
+- `worf-offensive-security.md`: Seguridad Ofensiva, Red Team y Pruebas de Penetración.
+- `troi-ux-docs.md`: Sistema de Diseño, Accesibilidad WCAG e Higiene Visual.
+- `crusher-health.md`: Calidad Médica del Código y Protocolo Ponytail.
+- `wesley-runner.md`: Automatización Rápida, Scripts y Suites de Pruebas Unitarias.
+- `q-meta-critic.md`: Meta-Crítico Omnisciente y Verificación de Realidad Externa.
+
+*Acorazado listo para la conquista. ¡Fuego a discreción!*

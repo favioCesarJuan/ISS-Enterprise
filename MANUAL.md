@@ -12,7 +12,7 @@ Welcome to the **ISS-Enterprise Tactical Operations Manual**. This guide provide
    - [Creating Custom Skills (`skills create`)](#creating-custom-skills)
    - [Anatomy of a `SKILL.md` File](#anatomy-of-a-skillmd-file)
    - [Anti-Collision Compaction (`skills compact`)](#anti-collision-compaction)
-   - [The 6 Canonical Domains](#the-6-canonical-domains)
+   - [The 8 Canonical Domains](#the-8-canonical-domains)
 2. [MCP Sensor Triad & Extensibility](#2-mcp-sensor-triad--extensibility)
    - [The Indispensable MCP Triad](#the-indispensable-mcp-triad)
    - [Generating Configuration (`iss mcps`)](#generating-configuration)
@@ -25,6 +25,11 @@ Welcome to the **ISS-Enterprise Tactical Operations Manual**. This guide provide
 4. [Heterogeneous Fleet Orchestration & Context Budgeting](#4-heterogeneous-fleet-orchestration--context-budgeting)
    - [Context Window Tiering](#context-window-tiering)
    - [Cognitive Language Protocol (Token Economy)](#cognitive-language-protocol)
+5. [Lifecycle-Aware Tactical Advisor (`iss advise`)](#5-lifecycle-aware-tactical-advisor-iss-advise)
+   - [Greenfield / Active Construction / Maintenance Diagnostic](#greenfield--active-construction--maintenance-diagnostic)
+6. [Consulted Framework Updater with Quadruple Security Gate (`iss update`)](#6-consulted-framework-updater-with-quadruple-security-gate-iss-update)
+   - [The Quadruple Security Gate & Atomic Rollback](#the-quadruple-security-gate--atomic-rollback)
+7. [Physical Crew Manifests (`.agents/crew/`)](#7-physical-crew-manifests-agentscrew)
 
 ---
 
@@ -88,9 +93,9 @@ pnpm dlx iss-enterprise skills compact
 The compactor engine (`src/skill-engine.js`):
 1. Reads all directories in `.agents/skills/`.
 2. Analyzes instruction tokens and identifies semantic domain boundaries.
-3. Merges overlapping directives into the **6 canonical pillars**, deduplicating rules and outputting streamlined instruction manifests.
+3. Merges overlapping directives into the **8 canonical pillars**, deduplicating rules and outputting streamlined instruction manifests.
 
-### The 6 Canonical Domains
+### The 8 Canonical Domains
 
 | Canonical Domain | Assigned Officer | Operational Focus |
 | :--- | :--- | :--- |
@@ -100,6 +105,8 @@ The compactor engine (`src/skill-engine.js`):
 | `fullstack-architecture` | Lt. Cmdr. Geordi La Forge | Monorepos, package boundaries, Dockerfiles, build caching |
 | `data-engineering-and-rag` | Lt. Cmdr. Data | Vector retrieval, ETL pipelines, Chroma/Qdrant, data streaming |
 | `workflow-and-coordination` | Commander William T. Riker | Strict TDD, task breakdown, Vitest/Pytest/Playwright verification |
+| `skill-governance-lifecycle` | Lt. Worf & Lt. Cmdr. Geordi | Lifecycle contracts, schema validation, drift detection, vetting |
+| `meta-critic-q` | Q (The Q Continuum) | Omniscient meta-evaluation, timeline scrutiny, bias destruction, chaos tests |
 
 ---
 
@@ -284,3 +291,74 @@ When interacting with non-English speaking developers (e.g. Spanish):
 1. **Inbound/Outbound Communications**: The agents communicate with the human Captain in their natural language for maximum UX clarity.
 2. **Internal Deliberation & AST Operations**: Model-to-model reasoning and code review traces run in English.
 3. **BPE Token Savings**: English tokenization consumes **30% to 50% fewer Byte Pair Encoding (BPE) tokens** than romance or non-Latin languages for identical logic, directly lowering costs and speeding up response generation.
+
+---
+
+## 5. Lifecycle-Aware Tactical Advisor (`iss advise`)
+
+The `iss advise` command runs heuristic workspace inspection to detect project maturity and provide actionable, context-aware guidance:
+
+```bash
+# Run interactively:
+iss advise
+
+# Run non-interactively with optimal recommendations:
+iss advise --yes
+```
+
+### Greenfield / Active Construction / Maintenance Diagnostic
+
+1. **Greenfield (Brand New / Empty)**:
+   - Evaluates file layout and tech stack intent.
+   - Suggests clean directory separation (`src/controllers`, `src/domain`, `src/infrastructure` or Atomic Design for Astro).
+   - Recommends Biome or strict ESLint + TypeScript from day one.
+   - Recommends configuring tests immediately (`node:test` or Vitest).
+2. **In-Construction (Active Development)**:
+   - Performs a gap analysis checking for missing test suites, unhooked pre-commit checks, or unconfigured MCP sensors.
+   - Suggests activating `iss engage` and `iss mcps` without interrupting existing development momentum.
+3. **Maintenance (Stable / Legacy / Production)**:
+   - Focuses strictly on non-breaking refactoring and regression prevention.
+   - Enforces Semgrep SAST rules to prevent continuous polling loops and insecure subprocess calls.
+   - Audits Node.js runtime CVE baselines and freezes dependency boundaries.
+
+Findings are saved persistently in `.agents/project-profile.json`.
+
+---
+
+## 6. Consulted Framework Updater with Quadruple Security Gate (`iss update`)
+
+Framework updates are **NEVER silent or backgrounded**. They require human consent and must pass all security checks in quarantine:
+
+```bash
+# Check upstream version drift:
+iss update --check
+
+# Trigger interactive update:
+iss update
+```
+
+### The Quadruple Security Gate & Atomic Rollback
+
+1. **Gate 1 - Tasha Yar Tactical Security Shield**: Checks incoming files for destructive patterns (`rm -rf`, piped shell commands, restricted path writes).
+2. **Gate 2 - Semgrep SAST**: Scans quarantined files against `.semgrep.yml` for secret leaks, polling antipatterns, and insecure system commands.
+3. **Gate 3 - Skill Safety Quarantine**: Verifies all skills against prompt injection and malicious tool hijack patterns.
+4. **Gate 4 - Node.js Runtime CVE Baseline**: Validates version compatibility against the SecurityVulnerability.io database.
+
+**Atomic Backup & Rollback**: Prior to applying updates, the existing `.agents` directory is archived to `.agents.backup.<timestamp>`. If verification tests fail, the updater automatically restores the backup.
+
+---
+
+## 7. Physical Crew Manifests (`.agents/crew/`)
+
+Every Mirror Universe officer has a physical, structured Markdown dossier in `.agents/crew/`:
+- `riker-orchestrator.md`: Lead AI Orchestrator & Task Planner.
+- `data-systems-logic.md`: Systems Logic, Algorithms & RAG Architect.
+- `geordi-architect.md`: Chief Engineer, Monorepos & Infrastructure.
+- `tasha-perimeter-shield.md`: Defensive Perimeter Security & Command Intercept.
+- `worf-offensive-security.md`: Offensive Red Team & Penetration Testing.
+- `troi-ux-docs.md`: Design System Enforcer, Accessibility & Styling Hygiene.
+- `crusher-health.md`: Quality Health Auditor & Ponytail Protocol.
+- `wesley-runner.md`: Automation Runner, Scripts & Fast Unit Tests.
+- `q-meta-critic.md`: Meta-Critic Evaluator & Omniscient Reality Check.
+
+*Dreadnought cleared for conquest. Fire at will!*

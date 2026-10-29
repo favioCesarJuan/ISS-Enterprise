@@ -1,0 +1,33 @@
+{
+  "evaluatedAt": "2026-10-29T13:44:16.619Z",
+  "lifecycleStage": "maintenance",
+  "targetDir": "/home/favio/Mis-proyectos/ISS-Enterprise",
+  "metrics": {
+    "commitCount": 15,
+    "gaps": {
+      "hasTests": true,
+      "hasLinter": false,
+      "hasMcp": true,
+      "hasCrew": true,
+      "hasSemgrep": true,
+      "hasGitHooks": true
+    }
+  },
+  "recommendations": [
+    {
+      "category": "Auditoría & Hardening",
+      "title": "Auditoría Periódica de Seguridad (`iss doctor`)",
+      "details": "Verifica la integridad de los escudos, detecta desviaciones en hooks y audita dependencias."
+    },
+    {
+      "category": "Gobernanza de Skills",
+      "title": "Compactar y Fusionar Habilidades (`iss skills compact`)",
+      "details": "Optimiza el consumo de contexto consolidando skills dispersas en dominios canónicos."
+    },
+    {
+      "category": "SAST & Semgrep",
+      "title": "Análisis Estático Continuo Semgrep",
+      "details": "Previene regresiones, vulnerabilidades OWASP y polling destructivo en bases de código maduras."
+    }
+  ]
+}

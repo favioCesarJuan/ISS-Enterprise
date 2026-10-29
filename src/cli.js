@@ -16,13 +16,14 @@ import path from 'node:path';
 import readline from 'node:readline';
 import { execSync } from 'node:child_process';
 import { detectProject, ARCHETYPES } from './detector.js';
-import { getTailoredQuestions, investigateCustomChoice } from './advisor.js';
+import { getTailoredQuestions, investigateCustomChoice, runLifecycleAdvisor } from './advisor.js';
 import { detectAvailableFleet, allocateCrewToFleet, PROVIDER_REGISTRY } from './fleet-manager.js';
 import { recommendSkillsForArchetype, compactAndFuseSkills, createNewSkill } from './skill-engine.js';
 import { configureIndispensableTriad, evaluateTriadSubstitutions } from './mcp-engine.js';
 import { scaffoldGreenfield } from './scaffolder.js';
 import { generateGovernanceArchitecture } from './generator.js';
 import { runGovernanceAudit, printAuditReport } from './auditor.js';
+import { runFrameworkUpdate } from './updater.js';
 
 // ANSI terminal color helpers
 const c = {
@@ -87,6 +88,13 @@ export async function runCLI(args = []) {
       break;
     case 'mcps':
       await handleMcps(args.slice(1));
+      break;
+    case 'update':
+      await handleUpdate(args.slice(1));
+      break;
+    case 'advise':
+    case 'advisor':
+      await handleAdvise(args.slice(1));
       break;
     case 'help':
     case '--help':
@@ -349,10 +357,14 @@ async function handleSkills(args) {
     console.log(`${c.bold}Active & Recommended Skills for ${c.cyan}${targetDir}${c.reset}:`);
     skills.forEach(s => console.log(`  - ${c.green}${s}${c.reset}`));
   } else if (sub === 'compact') {
-    console.log(`${c.bold}Compacting and fusing skills in ${c.cyan}${targetDir}${c.reset}...`);
-    const fused = compactAndFuseSkills(targetDir);
-    console.log(`${c.green}Compacted into canonical pillars:${c.reset}`);
+    const isDryRun = args.includes('--dry-run');
+    console.log(`${c.bold}Compacting and fusing skills in ${c.cyan}${targetDir}${c.reset}${isDryRun ? ' [DRY RUN]' : ''}...`);
+    const fused = compactAndFuseSkills(targetDir, { dryRun: isDryRun, writeToDisk: !isDryRun });
+    console.log(`${c.green}Compacted into ${fused.length} canonical pillars:${c.reset}`);
     fused.forEach(f => console.log(`  - ${c.gold}${f.canonicalName}${c.reset} (${f.sourceSkills.length} source skills fused)`));
+    if (!isDryRun) {
+      console.log(`${c.green}✅ Persisted canonical skills to .agents/skills/<domain>/SKILL.md${c.reset}`);
+    }
   } else if (sub === 'create') {
     const skillName = args[1];
     if (!skillName) {
@@ -418,6 +430,25 @@ async function handleMcps(args) {
 }
 
 /**
+ * Handler for `iss update`
+ */
+async function handleUpdate(args) {
+  const checkOnly = args.includes('--check');
+  const autoYes = args.includes('--yes') || args.includes('-y');
+  const targetDir = args.find(a => !a.startsWith('-')) || process.cwd();
+  await runFrameworkUpdate(targetDir, { checkOnly, yes: autoYes });
+}
+
+/**
+ * Handler for `iss advise`
+ */
+async function handleAdvise(args) {
+  const autoYes = args.includes('--yes') || args.includes('-y');
+  const targetDir = args.find(a => !a.startsWith('-')) || process.cwd();
+  await runLifecycleAdvisor(targetDir, { yes: autoYes });
+}
+
+/**
  * Handler for `iss help`
  */
 function handleHelp() {
@@ -434,18 +465,22 @@ ${c.bold}COMMANDS:${c.reset}
   ${c.green}new${c.reset} <name> [dir]        Scaffold a brand new project from scratch (Greenfield)
   ${c.green}skills${c.reset} list|compact|create Manage, compact & fuse agent skills
   ${c.green}mcps${c.reset} [dir|warmup]       Configure or warm up the Indispensable MCP Triad
+  ${c.green}advise${c.reset} [dir] [--yes]    Lifecycle-aware tactical advisor (Greenfield / Active / Maintenance)
+  ${c.green}update${c.reset} [dir] [--check]  Consulted framework updater with Quadruple Security Gate
   ${c.green}help${c.reset}                    Display this tactical guidance manifest
 
 ${c.bold}OPTIONS:${c.reset}
   ${c.cyan}--yes, -y${c.reset}               Non-interactive mode, auto-accept optimal recommendations
+  ${c.cyan}--check${c.reset}                 Check for upstream updates without applying
   ${c.cyan}--dry-run${c.reset}               Simulate governance deployment without writing to disk
   ${c.cyan}--json${c.reset}                  Output structured JSON (available in inspect)
 
 ${c.bold}EXAMPLES:${c.reset}
   $ iss engage
-  $ iss engage --dry-run
   $ iss doctor
-  $ iss inspect
+  $ iss advise
+  $ iss update --check
+  $ iss update
   $ iss inspect /path/to/my-expo-app
   $ iss init --yes
   $ iss new alpha-station
