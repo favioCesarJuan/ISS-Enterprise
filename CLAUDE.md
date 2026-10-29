@@ -16,7 +16,7 @@ Before writing or mutating code:
 1. **Plan & Trace**: Read relevant AST relations or codebase files. Formulate atomic plan.
 2. **Test First**: Write or identify the verification test reproducing the issue or defining acceptance.
 3. **Implement**: Minimalist diff strictly adhering to project conventions.
-4. **Verify**: Run `pnpm test` (or `node test/suite.js`) and ensure all 21/21 tests pass.
+4. **Verify**: Run `pnpm test` (or `node test/suite.js`) and ensure all 27/27 tests pass.
 5. **Remember**: If an unexpected trap or quirk is discovered, record it in `.agents/instincts.md`.
 
 ## ⚡ Primary Commands
@@ -24,5 +24,7 @@ Before writing or mutating code:
 - Run governance & security audit: `node ./bin/iss.js doctor` (or `pnpm audit`)
 - Check security shield: `node .agents/hooks/tasha-security-shield.js --test`
 - Check health & styling: `node .agents/hooks/crusher-health-check.js --test`
-- Tactical Crew Roster & Roles: Inspect `Agents.md`
+- Run lifecycle advisor: `node ./bin/iss.js advise`
+- Check upstream updates: `node ./bin/iss.js update --check`
+- Tactical Crew Roster & Roles: Inspect `Agents.md` and `.agents/crew/*.md`
 - Learned Project Memory: Consult `.agents/instincts.md`

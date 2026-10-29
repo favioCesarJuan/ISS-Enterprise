@@ -41,19 +41,34 @@ Adapta las directivas de estilos a la arquitectura real del proyecto:
 - **Modo Headless**: Desactiva por completo el linteo de UI/CSS en proyectos de datos, microservicios o herramientas CLI.
 
 ### 5. 🗜️ Motor de Skills Dinámico y Compactador Anticolisiones
-Evita la saturación de contexto y colisiones de instrucciones fusionando cualquier cantidad de skills en 6 pilares canónicos:
-1. `security-guardrails` (Tasha Yar: Semgrep, OWASP Top 10, Strix Red Team, Escudos de Comandos)
+Evita la saturación de contexto y colisiones de instrucciones fusionando cualquier cantidad de skills en 8 pilares canónicos:
+1. `security-guardrails` (Tasha Yar & Worf: Semgrep, OWASP Top 10, Strix Red Team, Escudos de Comandos)
 2. `design-system-and-ui` (Troi: WCAG AAA, tokens de diseño, CSS/Tailwind)
 3. `code-health-and-ponytail` (Dra. Crusher: Protocolo Ponytail, YAGNI, prohibición de polling)
 4. `fullstack-architecture` (Geordi: Monorepos, DDD, límites hexagonales)
 5. `data-engineering-and-rag` (Data: Ingesta vectorial, pipelines ETL)
 6. `workflow-and-coordination` (Riker: TDD estricto, Vitest/Pytest/Playwright)
+7. `skill-governance-lifecycle` (Worf & Geordi: Contratos de ciclo de vida, detección de desviación, auditoría)
+8. `meta-critic-q` (Q: Meta-evaluación omnisciente, eliminación de sesgos, pruebas de caos)
 
 ### 6. 🔌 Tríada Indispensable de MCPs
 Configura y pre-aprueba los tres servidores esenciales de Model Context Protocol:
 1. **context7**: Documentación oficial y actualizada de 2026 sin alucinaciones.
 2. **codebase-memory-mcp**: Grafo de conocimiento persistente y consultas Cypher para trazabilidad de dependencias.
 3. **github**: Control de versiones, gestión de PRs y revisión automatizada (con fallback al CLI ligero `gh` para modelos locales con contexto limitado).
+
+### 7. 🏗️ Asesor de Ciclo de Vida (`iss advise`)
+Formula preguntas y diagnósticos inteligentes adaptados a la madurez del proyecto:
+- **Greenfield (Desde Cero)**: Sugiere arquitectura limpia, Biome/ESLint con TypeScript estricto y tests nativos.
+- **En Construcción (Desarrollo Activo)**: Detecta brechas en vivo (falta de MCPs, hooks no enlazados, ausencia de tests).
+- **Mantenimiento (Estable / Legacy)**: Prioriza prevención de regresiones, reglas Semgrep AST, auditorías CVE de Node y estabilidad.
+
+### 8. 🔄 Actualizador Consultado del Framework (`iss update`)
+Las actualizaciones **NUNCA son silenciosas ni automáticas**. Requieren confirmación interactiva y deben superar la **Cuádruple Barrera Táctica** en cuarentena:
+1. Escudo Táctico de Tasha Yar
+2. Semgrep SAST (.semgrep.yml)
+3. Cuarentena de Seguridad de Skills y SkillSpector
+4. Verificación de CVEs en el Runtime de Node.js
 
 ---
 
@@ -213,6 +228,25 @@ pnpm dlx iss-enterprise skills compact
 pnpm dlx iss-enterprise skills list
 ```
 
+### Consultar al Asesor de Ciclo de Vida
+Recibe un diagnóstico de brechas y sugerencias tecnológicas adaptadas al estado del proyecto:
+```bash
+pnpm dlx iss-enterprise advise
+
+# O en modo automático:
+pnpm dlx iss-enterprise advise --yes
+```
+
+### Actualizador Consultado del Framework
+Actualiza la gobernanza y hooks de forma segura mediante la Cuádruple Barrera:
+```bash
+# Verificar cambios upstream:
+pnpm dlx iss-enterprise update --check
+
+# Actualización consultada con confirmación interactiva:
+pnpm dlx iss-enterprise update
+```
+
 ### Configurar y Extender Servidores MCP
 Genera la tríada de sensores indispensables (`context7`, `codebase-memory-mcp`, `github`):
 ```bash
@@ -224,6 +258,8 @@ pnpm dlx iss-enterprise mcps
 ---
 
 ## 👑 Cadena de Mando (La Tripulación Táctica del ISS)
+
+Cada oficial cuenta con un expediente físico estructurado en `.agents/crew/*.md`:
 
 | Oficial | Rol Corporativo | Área de Responsabilidad |
 | :--- | :--- | :--- |
@@ -242,7 +278,7 @@ pnpm dlx iss-enterprise mcps
 
 ## 🧪 Suite de Pruebas Automatizadas
 
-ISS-Enterprise incluye una suite de verificación exhaustiva e independiente de la máquina local, que valida todos los arquetipos, investigaciones heurísticas, asignación de modelos y ejecución real de hooks tácticos:
+ISS-Enterprise incluye una suite de verificación exhaustiva e independiente de la máquina local, que valida todos los arquetipos, investigaciones heurísticas, asignación de modelos, Semgrep SAST, CVEs de Node, y ejecución real de hooks tácticos:
 
 ```bash
 pnpm test
@@ -255,6 +291,9 @@ pnpm test
   ✔ Detector: Correctly identifies Astro SSG with Mixed Styling (Astro Portal archetype)
   ✔ Detector: Correctly identifies Python Data/RAG Pipeline Headless (Python RAG Pipeline archetype)
   ✔ Detector: Correctly identifies Fullstack Monorepo with Strict CSS (Enterprise Monorepo archetype)
+  ✔ Detector: Correctly identifies Mobile Cross-Platform (Expo / React Native)
+  ✔ Detector: Correctly identifies Chrome Extension Manifest V3
+  ✔ Detector: Correctly identifies High-Performance System CLI (Rust / Go)
   ✔ Advisor: Heuristic investigation of Bun and ElysiaJS
   ✔ Advisor: Heuristic investigation of FastAPI
   ✔ Advisor: Unrecognized custom tech adopts fallback zero-dep governance
@@ -267,7 +306,18 @@ pnpm test
   ✔ Advisor: Prioritizes Atomic Design UI recommendation for Astro stacks
   ✔ Advisor: Prioritizes Hexagonal Layers recommendation for Backend APIs
   ✔ Scaffolder & Generator: End-to-end greenfield creation with live hooks and Atomic Design
+  ✔ Generator: Respects dryRun without creating files on disk
+  ✔ Auditor: Detects styling drift when forbidden dependency is injected
+  ✔ Auditor: AgentShield detects insecure MCP command injection and exposed secrets
+  ✔ SkillEngine: validateSkillSafety quarantines prompt injection patterns
+  ✔ Auditor: Verifies Node.js CVE baseline and Semgrep SAST readiness
+  ✔ Advisor: Tailors questions and inspects project lifecycle stage
+  ✔ Updater: Accurately detects installed framework version
+  ✔ Crew: Has all 9 canonical Mirror Universe dossiers in .agents/crew
+  ✔ SkillEngine: compactAndFuseSkills writes fused markdown files to disk
 ----------------------------------------------------
+RESULTS: 27/27 Tests Passed.
+```
 RESULTS: 15/15 Tests Passed.
 ```
 

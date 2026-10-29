@@ -138,7 +138,7 @@ export function validateSkillSafety(content = '') {
  * @param {string|Array<{ name: string, content: string }>} inputDirOrList
  * @returns {Array<{ canonicalName: string, domain: string, sourceSkills: string[], fusedContent: string }>}
  */
-export function compactAndFuseSkills(inputDirOrList = []) {
+export function compactAndFuseSkills(inputDirOrList = [], options = {}) {
   let rawSkills = [];
 
   if (typeof inputDirOrList === 'string') {
@@ -194,6 +194,13 @@ description: Canonical compacted skill fusing ${list.map(s => s.name).join(', ')
 
 ${fusedDirectives}
 `;
+    const baseDir = typeof inputDirOrList === 'string' ? inputDirOrList : (options.targetDir || null);
+    if (baseDir && options.writeToDisk !== false && options.dryRun !== true) {
+      const targetDir = path.resolve(baseDir, '.agents/skills', domain);
+      if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
+      fs.writeFileSync(path.join(targetDir, 'SKILL.md'), header, 'utf-8');
+    }
+
     compacted.push({
       canonicalName: domain,
       domain,
@@ -226,6 +233,9 @@ function classifySkillToDomain(name = '', content = '') {
   }
   if (/architecture|nest|next|monorepo|turbo|drizzle|orm|database/i.test(text)) {
     return 'fullstack-architecture';
+  }
+  if (/lifecycle|governance|drift|contract|manifest|charter|vetting/i.test(text)) {
+    return 'skill-governance-lifecycle';
   }
   if (/critic|q-continuum|timeline|chaos|evaluator|bias/i.test(text)) {
     return 'meta-critic-q';

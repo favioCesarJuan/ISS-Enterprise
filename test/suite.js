@@ -20,13 +20,14 @@ import path from 'node:path';
 import os from 'node:os';
 import { execSync } from 'node:child_process';
 import { detectProject, ARCHETYPES } from '../src/detector.js';
-import { investigateCustomChoice, getTailoredQuestions } from '../src/advisor.js';
+import { investigateCustomChoice, getTailoredQuestions, detectProjectLifecycle, PROJECT_LIFECYCLE } from '../src/advisor.js';
 import { allocateFleet, allocateCrewToFleet, MODEL_REGISTRY, generateFleetEnvConfig, generateOllamaPullScript } from '../src/fleet-manager.js';
 import { recommendSkillsForArchetype, compactAndFuseSkills, createNewSkill, validateSkillSafety } from '../src/skill-engine.js';
 import { buildMcpPlan, configureIndispensableTriad } from '../src/mcp-engine.js';
 import { scaffoldGreenfield } from '../src/scaffolder.js';
 import { generateGovernanceArchitecture } from '../src/generator.js';
 import { runGovernanceAudit } from '../src/auditor.js';
+import { getInstalledVersion } from '../src/updater.js';
 
 const PASS = '  \x1b[32m✔\x1b[0m';
 const FAIL = '  \x1b[31m✖\x1b[0m';
@@ -463,6 +464,74 @@ runTest('Auditor: Verifies Node.js CVE baseline and Semgrep SAST readiness', () 
   const audit = runGovernanceAudit(process.cwd());
   assert.ok(audit.passed.some(p => p.includes('Node.js runtime')));
   assert.ok(audit.passed.some(p => p.includes('Semgrep AST security rules file')));
+});
+
+// Test 14: Lifecycle Advisor & Questions
+// -----------------------------------------------------------------------------
+runTest('Advisor: Tailors questions and inspects project lifecycle stage', () => {
+  const detection = detectProjectLifecycle(process.cwd());
+  assert.ok(detection.commitCount > 0);
+  assert.ok(detection.inferredStage);
+  assert.ok(PROJECT_LIFECYCLE.GREENFIELD === 'greenfield');
+  assert.ok(PROJECT_LIFECYCLE.MAINTENANCE === 'maintenance');
+
+  const questions = getTailoredQuestions({ archetype: 'GREENFIELD_EMPTY' });
+  const lifecycleQ = questions.find(q => q.id === 'project_lifecycle');
+  assert.ok(lifecycleQ, 'Must have project_lifecycle question');
+  assert.ok(lifecycleQ.options.length >= 3);
+});
+
+// Test 15: Consulted Framework Updater Version Detection
+// -----------------------------------------------------------------------------
+runTest('Updater: Accurately detects installed framework version', () => {
+  const ver = getInstalledVersion(process.cwd());
+  assert.ok(typeof ver === 'string');
+  assert.match(ver, /^\d+\.\d+\.\d+/);
+});
+
+// Test 16: Physical Crew Manifests (.agents/crew/)
+// -----------------------------------------------------------------------------
+runTest('Crew: Has all 9 canonical Mirror Universe dossiers in .agents/crew', () => {
+  const crewDir = path.resolve('.agents/crew');
+  assert.ok(fs.existsSync(crewDir), '.agents/crew must exist');
+
+  const expectedDossiers = [
+    'riker-orchestrator.md',
+    'data-systems-logic.md',
+    'geordi-architect.md',
+    'tasha-perimeter-shield.md',
+    'worf-offensive-security.md',
+    'troi-ux-docs.md',
+    'crusher-health.md',
+    'wesley-runner.md',
+    'q-meta-critic.md'
+  ];
+
+  for (const dossier of expectedDossiers) {
+    const p = path.join(crewDir, dossier);
+    assert.ok(fs.existsSync(p), `Dossier ${dossier} must exist`);
+    const content = fs.readFileSync(p, 'utf-8');
+    assert.ok(content.includes('name:'), `${dossier} must have name frontmatter`);
+    assert.ok(content.includes('corporateRole:'), `${dossier} must have corporateRole`);
+  }
+});
+
+// Test 17: Skills Compact physical disk persistence
+// -----------------------------------------------------------------------------
+runTest('SkillEngine: compactAndFuseSkills writes fused markdown files to disk', () => {
+  const tmpSkillDir = path.resolve('.tmp-skills-test');
+  fs.mkdirSync(tmpSkillDir, { recursive: true });
+
+  const skillsToFuse = [
+    { name: 'auth-validator', content: '# Auth Validator\nVerifies JWT claims.' },
+    { name: 'session-store', content: '# Session Store\nManages active tokens.' }
+  ];
+
+  const fused = compactAndFuseSkills(skillsToFuse, { targetDir: tmpSkillDir, writeToDisk: true });
+  assert.ok(fused.length > 0);
+  assert.ok(fs.existsSync(path.join(tmpSkillDir, '.agents/skills/security-guardrails/SKILL.md')));
+
+  fs.rmSync(tmpSkillDir, { recursive: true, force: true });
 });
 
 console.log('----------------------------------------------------');

@@ -41,19 +41,34 @@ Adapts styling rules to the project's actual architecture:
 - **Headless Mode**: Completely disables UI/CSS linting for data pipelines, microservices, and CLIs.
 
 ### 5. 🗜️ Dynamic Skill Engine & Anti-Collision Compactor
-Prevents instruction bloat and prompt collisions by compacting unlimited raw skills into 6 canonical pillars:
-1. `security-guardrails` (Lt. Tasha Yar: Semgrep, OWASP Top 10, Strix Red Team, Command Shields)
+Prevents instruction bloat and prompt collisions by compacting unlimited raw skills into 8 canonical pillars:
+1. `security-guardrails` (Lt. Tasha Yar & Worf: Semgrep, OWASP Top 10, Strix Red Team, Command Shields)
 2. `design-system-and-ui` (Counselor Troi: WCAG AAA, UI tokens, CSS/Tailwind governance)
 3. `code-health-and-ponytail` (Dr. Crusher: Ponytail protocol, YAGNI, zero-polling)
 4. `fullstack-architecture` (Lt. Cmdr. Geordi: Monorepos, DDD, Hexagonal boundaries)
 5. `data-engineering-and-rag` (Lt. Cmdr. Data: Vector retrieval, ETL pipelines)
 6. `workflow-and-coordination` (Commander Riker: Strict TDD, Vitest/Pytest/Playwright)
+7. `skill-governance-lifecycle` (Worf & Geordi: Lifecycle contracts, drift detection, vetting)
+8. `meta-critic-q` (Q: Omniscient meta-evaluation, bias elimination, chaos trials)
 
 ### 6. 🔌 Indispensable MCP Triad
 Deploys and pre-approves the three essential Model Context Protocol servers:
 1. **context7**: Live 2026 official documentation lookup without hallucinations.
 2. **codebase-memory-mcp**: Persistent knowledge graph and Cypher queries for call-chain tracing.
 3. **github**: Version control, pull request management, and automated issue reviews (with automatic lightweight `gh` CLI fallback for local small models).
+
+### 7. 🏗️ Lifecycle-Aware Advisor (`iss advise`)
+Formulates intelligent, non-intrusive questions and gap recommendations tailored to whether your project is:
+- **Greenfield (Brand New / From Scratch)**: Recommends zero-debt architecture, clean folder layout, strict type safety, and test runners from day one.
+- **In-Construction (Active Development)**: Audits live gaps (missing MCPs, unhooked pre-commit checks, test suites) and suggests non-breaking incremental additions.
+- **Maintenance (Stable / Legacy)**: Enforces regression defense, Semgrep SAST scans, Node.js CVE baseline compliance, and dependency freezing.
+
+### 8. 🔄 Consulted Framework Updater (`iss update`)
+Upstream updates are **never silent or automated**. Updates require explicit interactive confirmation and must pass the **Quadruple Security Gate** in quarantine:
+1. Tasha Yar Tactical Security Shield
+2. Semgrep SAST (.semgrep.yml)
+3. SkillSpector & Skill Safety Quarantine
+4. Node.js Runtime CVE Baseline Check
 
 ---
 
@@ -213,6 +228,25 @@ pnpm dlx iss-enterprise skills compact
 pnpm dlx iss-enterprise skills list
 ```
 
+### Consult the Lifecycle Advisor
+Receive tailored gap analysis and technology suggestions based on project maturity:
+```bash
+pnpm dlx iss-enterprise advise
+
+# Or in automatic mode:
+pnpm dlx iss-enterprise advise --yes
+```
+
+### Consulted Framework Updater
+Safely update governance and hooks via the Quadruple Security Gate:
+```bash
+# Check upstream drift:
+pnpm dlx iss-enterprise update --check
+
+# Consulted update with interactive confirmation:
+pnpm dlx iss-enterprise update
+```
+
 ### Configure & Extend MCP Servers
 Deploy the indispensable sensor triad (`context7`, `codebase-memory-mcp`, `github`):
 ```bash
@@ -224,6 +258,8 @@ pnpm dlx iss-enterprise mcps
 ---
 
 ## 👑 Command Hierarchy (The ISS Tactical Crew)
+
+Each officer has an individual physical dossier located in `.agents/crew/*.md`:
 
 | Officer | Corporate Role | Focus Domain |
 | :--- | :--- | :--- |
@@ -242,7 +278,7 @@ pnpm dlx iss-enterprise mcps
 
 ## 🧪 Automated Test Suite
 
-ISS-Enterprise includes a comprehensive test suite covering all archetypes, heuristic investigations, context budgeting rules, and physical hook executions:
+ISS-Enterprise includes a comprehensive test suite covering all archetypes, heuristic investigations, context budgeting rules, physical hook executions, Semgrep SAST, Node CVE baseline, and crew manifests:
 
 ```bash
 pnpm test
@@ -255,6 +291,9 @@ pnpm test
   ✔ Detector: Correctly identifies Astro SSG with Mixed Styling (Astro Portal archetype)
   ✔ Detector: Correctly identifies Python Data/RAG Pipeline Headless (Python RAG Pipeline archetype)
   ✔ Detector: Correctly identifies Fullstack Monorepo with Strict CSS (Enterprise Monorepo archetype)
+  ✔ Detector: Correctly identifies Mobile Cross-Platform (Expo / React Native)
+  ✔ Detector: Correctly identifies Chrome Extension Manifest V3
+  ✔ Detector: Correctly identifies High-Performance System CLI (Rust / Go)
   ✔ Advisor: Heuristic investigation of Bun and ElysiaJS
   ✔ Advisor: Heuristic investigation of FastAPI
   ✔ Advisor: Unrecognized custom tech adopts fallback zero-dep governance
@@ -267,7 +306,18 @@ pnpm test
   ✔ Advisor: Prioritizes Atomic Design UI recommendation for Astro stacks
   ✔ Advisor: Prioritizes Hexagonal Layers recommendation for Backend APIs
   ✔ Scaffolder & Generator: End-to-end greenfield creation with live hooks and Atomic Design
+  ✔ Generator: Respects dryRun without creating files on disk
+  ✔ Auditor: Detects styling drift when forbidden dependency is injected
+  ✔ Auditor: AgentShield detects insecure MCP command injection and exposed secrets
+  ✔ SkillEngine: validateSkillSafety quarantines prompt injection patterns
+  ✔ Auditor: Verifies Node.js CVE baseline and Semgrep SAST readiness
+  ✔ Advisor: Tailors questions and inspects project lifecycle stage
+  ✔ Updater: Accurately detects installed framework version
+  ✔ Crew: Has all 9 canonical Mirror Universe dossiers in .agents/crew
+  ✔ SkillEngine: compactAndFuseSkills writes fused markdown files to disk
 ----------------------------------------------------
+RESULTS: 27/27 Tests Passed.
+```
 RESULTS: 15/15 Tests Passed.
 ```
 
