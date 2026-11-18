@@ -1,37 +1,61 @@
-name: ISS-Enterprise Tactical Verification (CI)
+name: ISS-Enterprise CLI CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, master ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, master ]
 
 jobs:
-  tactical-test:
-    name: Run Suite on Node ${{ matrix.node-version }}
+  test-and-validate:
+    name: Test Suite, Doctor, Demo & Schema (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
-
     strategy:
-      fail-fast: false
       matrix:
-        node-version: [18.x, 20.x, 22.x]
+        node-version: [18, 20, 22]
 
     steps:
-      - name: Checkout Starship Repository
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v3
-        with:
-          version: 9
+      - uses: actions/checkout@v4
 
       - name: Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
 
-      - name: Verify Tactical Test Suite
-        run: pnpm test
+      - name: Run Automated Test Suite
+        run: node ./test/suite.js
 
-      - name: Dry-Run Package Tarball (Verify Clean Whitelist)
-        run: npm pack --dry-run
+      - name: Run Doctor Governance Audit
+        run: node ./bin/iss.js doctor
+
+      - name: Run Quickstart Demo (Standard & Starfleet)
+        run: |
+          node examples/quickstart-demo.js
+          node examples/quickstart-demo.js --theme=starfleet
+
+      - name: Validate hooks.json and mcp-servers.config.json Schemas
+        run: |
+          node -e "
+            const fs = require('node:fs');
+            const assert = require('node:assert/strict');
+            const hooks = JSON.parse(fs.readFileSync('.agents/hooks.json', 'utf8'));
+            assert.equal(hooks.version, '2.0.0');
+            assert.ok(Array.isArray(hooks.hooks) && hooks.hooks.length >= 5);
+            for (const h of hooks.hooks) {
+              assert.ok(fs.existsSync(h.path), 'Missing hook file: ' + h.path);
+            }
+            const mcp = JSON.parse(fs.readFileSync('.mcp/mcp-servers.config.json', 'utf8'));
+            assert.ok(mcp.mcpServers && typeof mcp.mcpServers === 'object', 'mcpServers root key required');
+            console.log('JSON schemas verified.');
+          "
+
+  semgrep-sast:
+    name: Semgrep SAST Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Semgrep with .semgrep.yml
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: .semgrep.yml

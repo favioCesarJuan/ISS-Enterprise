@@ -17,11 +17,11 @@ import path from 'node:path';
 export const CANONICAL_DOMAINS = [
   'security-guardrails',
   'design-system-and-ui',
-  'code-health-and-ponytail',
+  'code-health-and-minimalism',
   'fullstack-architecture',
   'data-engineering-and-rag',
   'workflow-and-coordination',
-  'meta-critic-q',
+  'adversarial-meta-review',
   'skill-governance-lifecycle'
 ];
 
@@ -32,32 +32,32 @@ export const CANONICAL_DOMAINS = [
  * @returns {string[]} List of recommended canonical skills
  */
 export function recommendSkillsForArchetype(archetype, techStack = {}) {
-  const skills = ['security-guardrails', 'meta-critic-q'];
+  const skills = ['security-guardrails', 'adversarial-meta-review'];
 
   switch (archetype) {
     case 'DATA_PIPELINE_RAG':
       skills.push('data-engineering-and-rag');
-      skills.push('code-health-and-ponytail');
+      skills.push('code-health-and-minimalism');
       skills.push('workflow-and-coordination');
       // Notice: NO UI/CSS skills for data pipelines!
       break;
 
     case 'CONTENT_SSG_PORTAL':
       skills.push('design-system-and-ui');
-      skills.push('code-health-and-ponytail');
+      skills.push('code-health-and-minimalism');
       skills.push('workflow-and-coordination');
       break;
 
     case 'BACKEND_API_ONLY':
       skills.push('fullstack-architecture');
-      skills.push('code-health-and-ponytail');
+      skills.push('code-health-and-minimalism');
       skills.push('workflow-and-coordination');
       break;
 
     case 'FULLSTACK_MONOREPO':
     default:
       skills.push('design-system-and-ui');
-      skills.push('code-health-and-ponytail');
+      skills.push('code-health-and-minimalism');
       skills.push('fullstack-architecture');
       skills.push('workflow-and-coordination');
       skills.push('skill-governance-lifecycle');
@@ -71,25 +71,25 @@ export function recommendSkillsForArchetype(archetype, techStack = {}) {
  * Creates a new custom skill template with standard YAML frontmatter.
  * @param {string} name
  * @param {string} description
- * @param {string} assignedOfficer
+ * @param {string} assignedRole
  * @returns {{ name: string, content: string }}
  */
-export function createCustomSkill(name, description = '', assignedOfficer = 'Data') {
+export function createCustomSkill(name, description = '', assignedRole = 'Systems & Logic Analyst') {
   const slug = name.toLowerCase().replace(/[^a-z0-9-]/g, '-');
   const content = `---
 name: ${slug}
-description: ${description || `Custom tactical skill for ${name} managed by ${assignedOfficer}.`}
+description: ${description || `Custom tactical skill for ${name} managed by ${assignedRole}.`}
 ---
 
-# ⚔️ ${name.toUpperCase()} (Officer: ${assignedOfficer})
+# ${name.toUpperCase()} (Owner: ${assignedRole})
 
-## 🎯 Purpose & Scope
+## Purpose & Scope
 ${description || `Specialized operational instructions for ${name}.`}
 
-## 📋 Directives & Best Practices
-1. **YAGNI & Minimalism**: Ascend the Ponytail ladder. Do not over-engineer.
+## Directives & Best Practices
+1. **YAGNI & Minimalism**: Prefer native stdlib primitives and surgical diffs.
 2. **Quality & Verification**: Every change must be validated by automated tests.
-3. **Security Shield**: Respect Lt. Tasha Yar's security perimeter rules.
+3. **Security Guardrail**: Respect pre-tool shell and path restriction rules.
 `;
 
   return { name: slug, content };
@@ -171,7 +171,7 @@ export function compactAndFuseSkills(inputDirOrList = [], options = {}) {
   for (const skill of rawSkills) {
     const safety = validateSkillSafety(skill.content);
     if (!safety.safe) {
-      console.warn(`🛡️  [TASHA YAR]: Quarantined unsafe skill '${skill.name}': ${safety.reason}`);
+      console.warn(`[SKILL SECURITY SCANNER]: Quarantined unsafe skill '${skill.name}': ${safety.reason}`);
       continue;
     }
 
