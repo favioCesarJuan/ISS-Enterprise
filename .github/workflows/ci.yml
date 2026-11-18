@@ -8,7 +8,7 @@ on:
 
 jobs:
   test-and-validate:
-    name: Test Suite, Doctor, Demo & Schema (Node ${{ matrix.node-version }})
+    name: Run Suite on Node ${{ matrix.node-version }}.x
     runs-on: ubuntu-latest
     strategy:
       matrix:
