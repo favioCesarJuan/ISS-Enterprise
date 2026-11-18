@@ -66,7 +66,7 @@ export function runGovernanceAudit(targetDir = process.cwd(), options = {}) {
   } else {
     try {
       const hooksConfig = JSON.parse(fs.readFileSync(hooksFile, 'utf-8'));
-      logPass(`.agents/hooks.json is valid JSON (Framework: ${hooksConfig.framework || 'unknown'}).`);
+      logPass(`.agents/hooks.json is valid JSON (Engine: ${hooksConfig.engine || hooksConfig.framework || 'unknown'}).`);
 
       // Check registered hook files
       if (Array.isArray(hooksConfig.hooks)) {
@@ -74,9 +74,9 @@ export function runGovernanceAudit(targetDir = process.cwd(), options = {}) {
           const hookRelPath = hook.path || '';
           const hookFullPath = path.resolve(root, hookRelPath);
           if (fs.existsSync(hookFullPath)) {
-            logPass(`Shield hook '${hook.name}' located at ${hookRelPath}`);
+            logPass(`Guard hook '${hook.name}' located at ${hookRelPath}`);
           } else {
-            logFail(`Shield hook '${hook.name}' registered in hooks.json but missing on disk: ${hookRelPath}`);
+            logFail(`Guard hook '${hook.name}' registered in hooks.json but missing on disk: ${hookRelPath}`);
           }
         }
       }
@@ -91,9 +91,9 @@ export function runGovernanceAudit(targetDir = process.cwd(), options = {}) {
     const preCommitHook = path.join(gitDir, 'hooks', 'pre-commit');
     const gitHooksDir = path.join(agentsDir, 'git-hooks', 'pre-commit');
     if (fs.existsSync(preCommitHook) || fs.existsSync(gitHooksDir)) {
-      logPass('Git pre-commit shield is active.');
+      logPass('Git pre-commit guard is active.');
     } else {
-      logWarn('Git repository detected, but no pre-commit hook shield was found. Run `iss engage` to bind shields.');
+      logWarn('Git repository detected, but no pre-commit hook guard was found. Run `iss apply` to bind guards.');
     }
   }
 
@@ -148,14 +148,16 @@ export function runGovernanceAudit(targetDir = process.cwd(), options = {}) {
     logWarn('No .agents/skills/ directory found.');
   }
 
-  // 5. Check Captains Log Ledger and Tactical Instincts
-  const logFile = path.join(agentsDir, 'captains_log.json');
+  // 5. Check Audit Log Ledger and Tactical Instincts
+  const auditLogFile = path.join(agentsDir, 'audit_log.json');
+  const legacyLogFile = path.join(agentsDir, 'captains_log.json');
+  const logFile = fs.existsSync(auditLogFile) ? auditLogFile : legacyLogFile;
   if (fs.existsSync(logFile)) {
     try {
       const logs = JSON.parse(fs.readFileSync(logFile, 'utf-8'));
-      logPass(`Captains log ledger online with ${Array.isArray(logs) ? logs.length : 0} entries.`);
+      logPass(`Audit log ledger (${path.basename(logFile)}) online with ${Array.isArray(logs) ? logs.length : 0} entries.`);
     } catch {
-      logWarn('captains_log.json is present but invalid JSON.');
+      logWarn(`${path.basename(logFile)} is present but invalid JSON.`);
     }
   }
 
@@ -165,7 +167,7 @@ export function runGovernanceAudit(targetDir = process.cwd(), options = {}) {
     const instinctsContent = fs.readFileSync(instinctsFile, 'utf-8');
     logPass(`Tactical instincts file active with ${instinctsContent.split('\n').filter(l => l.startsWith('### ')).length} learned heuristics.`);
   } else {
-    logWarn('Missing .agents/instincts.md. Run `iss engage` or `iss init` to enable continuous learning.');
+    logWarn('Missing .agents/instincts.md. Run `iss apply` or `iss init` to enable continuous learning.');
   }
 
   // 7. AgentShield Audit: MCP Servers Configuration & Sensitive Leaks

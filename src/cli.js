@@ -24,6 +24,7 @@ import { scaffoldGreenfield } from './scaffolder.js';
 import { generateGovernanceArchitecture } from './generator.js';
 import { runGovernanceAudit, printAuditReport } from './auditor.js';
 import { runFrameworkUpdate } from './updater.js';
+import { resolveTheme, printCrewThemeNotice } from './themes.js';
 
 // ANSI terminal color helpers
 const c = {
@@ -49,8 +50,8 @@ ${c.gold}    ██╗███████╗███████╗    ██
     ██║╚════██║╚════██║    ██╔══╝  ██║╚██╗██║   ██║   ██╔══╝  ██╔══██╗
     ██║███████║███████║    ███████╗██║ ╚████║   ██║   ███████╗██║  ██║
     ╚═╝╚══════╝╚══════╝    ╚══════╝╚═╝  ╚═══╝   ╚═╝   ╚══════╝╚═╝  ╚═╝${c.reset}
-  ${c.bold}${c.silver}ISS-ENTERPRISE: UNIVERSAL MULTI-AGENT TACTICAL ENGINE & WIZARD${c.reset}
-  ${c.dim}Mirror Universe Flagship // Generalist Cross-Stack Autonomous Governance${c.reset}
+  ${c.bold}${c.silver}ISS-ENTERPRISE: MULTI-STACK GOVERNANCE & SCAFFOLDING CLI${c.reset}
+  ${c.dim}Standard Functional Governance // Optional Starfleet Theme (--theme=starfleet)${c.reset}
 `);
 }
 
@@ -69,6 +70,7 @@ export async function runCLI(args = []) {
     case 'inspect':
       await handleInspect(args.slice(1));
       break;
+    case 'apply':
     case 'engage':
     case 'arm':
       await handleEngage(args.slice(1));
@@ -153,6 +155,7 @@ async function handleInspect(args) {
 async function handleInit(args) {
   const autoYes = args.includes('--yes') || args.includes('-y');
   const isDryRun = args.includes('--dry-run');
+  const theme = resolveTheme(args);
   const targetDir = args.find(a => !a.startsWith('-')) || process.cwd();
   const dir = path.resolve(targetDir);
 
@@ -160,7 +163,7 @@ async function handleInit(args) {
   if (isDryRun) {
     console.log(`${c.yellow}${c.bold}🔍 [DRY RUN MODE ACTIVE]: Simulating governance deployment without touching disk.${c.reset}`);
   }
-  console.log(`${c.bold}⚙️  INITIALIZING MULTI-AGENT GOVERNANCE AT:${c.reset} ${c.cyan}${dir}${c.reset}\n`);
+  console.log(`${c.bold}⚙️  INITIALIZING MULTI-AGENT GOVERNANCE AT:${c.reset} ${c.cyan}${dir}${c.reset} (Theme: ${theme})\n`);
 
   const profile = detectProject(dir);
   const questions = getTailoredQuestions(profile);
@@ -177,13 +180,13 @@ async function handleInit(args) {
 
   try {
     if (autoYes) {
-      console.log(`${c.yellow}[AUTOMATED MODE]: Adopting tactical defaults for ${profile.archetype}...${c.reset}`);
+      console.log(`${c.yellow}[AUTOMATED MODE]: Adopting defaults for ${profile.archetype}...${c.reset}`);
       answers.architecture_pattern = 'Hexagonal / Modular Clean';
       answers.file_distribution = profile.techStack?.hasTurbo ? 'Monorepo Packages' : 'Modular Standard';
       answers.styling_strategy = profile.stylingStrategy;
       answers.coding_styles = profile.techStack?.hasBiome ? 'Biome' : 'ESLint + Prettier + Strict TS';
-      answers.shield_rigidity = 'Standard Starfleet';
-      answers.crew_flavor = 'Híbrido: Star Trek TNG con subtítulo corporativo';
+      answers.shield_rigidity = 'Standard';
+      answers.crew_flavor = theme === 'starfleet' ? 'Starfleet (Opcional)' : 'Estándar (Funcional)';
     } else {
       for (const q of questions) {
         console.log(`\n${c.bold}${q.title}${c.reset}`);
@@ -217,33 +220,35 @@ async function handleInit(args) {
       }
     }
 
+    const effectiveTheme = /starfleet/i.test(answers.crew_flavor || '') ? 'starfleet' : theme;
+
     // Step 2: Fleet Allocation
-    console.log(`\n${c.bold}🛸 DETERMINING MODEL FLEET & CONTEXT BUDGETS...${c.reset}`);
+    console.log(`\n${c.bold}DETERMINING MODEL FLEET & CONTEXT BUDGETS...${c.reset}`);
     const fleetProfile = detectAvailableFleet();
     let fleetAlloc = allocateCrewToFleet(fleetProfile.detectedProviders);
-    console.log(`  Allocated ${c.green}${Object.keys(fleetAlloc.officerRoster).length} officers${c.reset} across available fleet models.`);
+    console.log(`  Allocated ${c.green}${Object.keys(fleetAlloc.officerRoster).length} roles${c.reset} across available fleet models.`);
 
     // Step 3: MCP Triad Confirmation
     const mcpTriad = configureIndispensableTriad({ preferredModel: fleetProfile.detectedProviders[0] || 'gemini' });
 
     // Step 4: Generate Artifacts
-    console.log(`\n${c.bold}⚡ EMITTING DETERMINISTIC AGENT DIRECTIVES...${c.reset}`);
-    const createdFiles = generateGovernanceArchitecture(dir, answers, fleetAlloc, mcpTriad, { dryRun: isDryRun });
+    console.log(`\n${c.bold}EMITTING DETERMINISTIC AGENT DIRECTIVES...${c.reset}`);
+    const createdFiles = generateGovernanceArchitecture(dir, answers, fleetAlloc, mcpTriad, { dryRun: isDryRun, theme: effectiveTheme });
 
     if (isDryRun) {
-      console.log(`\n${c.yellow}${c.bold}🔍 [DRY RUN RESULTS]: 0 files written to disk.${c.reset}`);
+      console.log(`\n${c.yellow}${c.bold}[DRY RUN RESULTS]: 0 files written to disk.${c.reset}`);
       console.log(`${c.silver}The following ${createdFiles.length} files would be created/modified:${c.reset}`);
       createdFiles.forEach(f => console.log(`  ${c.cyan}[DRY-RUN WOULD CREATE]${c.reset} ${f}`));
       console.log(`\nTo physically apply these changes, re-run without --dry-run.\n`);
       return createdFiles;
     }
 
-    console.log(`\n${c.green}${c.bold}✅ MISSION COMPLETE: GOVERNANCE INSTALLED${c.reset}`);
-    console.log(`${c.silver}Generated ${createdFiles.length} tactical assets in ${dir}:${c.reset}`);
+    console.log(`\n${c.green}${c.bold}MISSION COMPLETE: GOVERNANCE INSTALLED${c.reset}`);
+    console.log(`${c.silver}Generated ${createdFiles.length} assets in ${dir}:${c.reset}`);
     createdFiles.slice(0, 10).forEach(f => console.log(`  ${c.dim}+${c.reset} ${f}`));
     if (createdFiles.length > 10) console.log(`  ${c.dim}... and ${createdFiles.length - 10} more.${c.reset}`);
 
-    console.log(`\n${c.gold}Enterprise flagship is battle-ready. Execute! 🚀${c.reset}\n`);
+    printCrewThemeNotice(effectiveTheme);
     return createdFiles;
   } finally {
     rl.close();
@@ -251,14 +256,14 @@ async function handleInit(args) {
 }
 
 /**
- * Handler for `iss engage [dir] [--dry-run]`
- * One-shot tactical deployment: automatically detects project archetype,
- * adopts optimal presets, provisions crew, MCPs, and auto-arms Git pre-commit hooks.
+ * Handler for `iss apply [dir] [--dry-run] [--theme=standard|starfleet]` (alias: `engage`, `arm`)
  */
 async function handleEngage(args) {
   const targetDir = args.find(a => !a.startsWith('-')) || process.cwd();
   const passArgs = ['--yes', targetDir];
   if (args.includes('--dry-run')) passArgs.push('--dry-run');
+  const themeFlag = args.find(a => a.startsWith('--theme='));
+  if (themeFlag) passArgs.push(themeFlag);
   await handleInit(passArgs);
 }
 
@@ -458,29 +463,29 @@ ${c.bold}USAGE:${c.reset}
   $ iss <command> [options]
 
 ${c.bold}COMMANDS:${c.reset}
-  ${c.green}engage${c.reset} [dir]            One-shot tactical deployment: arms hooks, crew, MCPs & Git shields
-  ${c.green}doctor${c.reset} [dir]            Audit governance drift, executable shields, and policy alignment
+  ${c.green}apply${c.reset} [dir]             One-shot deployment: arms hooks, roles, MCPs & Git guards (alias: engage)
+  ${c.green}doctor${c.reset} [dir]            Audit governance drift, executable guards, and policy alignment
   ${c.green}inspect${c.reset} [dir]           Inspect existing project, detect archetype & recommendations
   ${c.green}init${c.reset} [dir] [--yes]      Launch interactive wizard to scaffold multi-agent governance
   ${c.green}new${c.reset} <name> [dir]        Scaffold a brand new project from scratch (Greenfield)
   ${c.green}skills${c.reset} list|compact|create Manage, compact & fuse agent skills
   ${c.green}mcps${c.reset} [dir|warmup]       Configure or warm up the Indispensable MCP Triad
-  ${c.green}advise${c.reset} [dir] [--yes]    Lifecycle-aware tactical advisor (Greenfield / Active / Maintenance)
+  ${c.green}advise${c.reset} [dir] [--yes]    Lifecycle-aware advisor (Greenfield / Active / Maintenance)
   ${c.green}update${c.reset} [dir] [--check]  Consulted framework updater with Quadruple Security Gate
-  ${c.green}help${c.reset}                    Display this tactical guidance manifest
+  ${c.green}help${c.reset}                    Display this CLI reference
 
 ${c.bold}OPTIONS:${c.reset}
   ${c.cyan}--yes, -y${c.reset}               Non-interactive mode, auto-accept optimal recommendations
+  ${c.cyan}--theme=standard|starfleet${c.reset} Use standard technical names (default) or optional Starfleet aliases
   ${c.cyan}--check${c.reset}                 Check for upstream updates without applying
   ${c.cyan}--dry-run${c.reset}               Simulate governance deployment without writing to disk
   ${c.cyan}--json${c.reset}                  Output structured JSON (available in inspect)
 
 ${c.bold}EXAMPLES:${c.reset}
-  $ iss engage
+  $ iss apply
+  $ iss apply --theme=starfleet
   $ iss doctor
   $ iss advise
-  $ iss update --check
-  $ iss update
   $ iss inspect /path/to/my-expo-app
   $ iss init --yes
   $ iss new alpha-station

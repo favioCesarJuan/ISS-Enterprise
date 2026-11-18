@@ -45,14 +45,15 @@ export const INDISPENSABLE_TRIAD = {
  * @returns {object} Structured MCP configuration and checklist
  */
 export function buildMcpPlan(techStack = {}, dominantProvider = 'anthropic') {
+  const servers = {};
   const plan = {
     triad: INDISPENSABLE_TRIAD,
-    recommendedConfig: {},
+    recommendedConfig: { mcpServers: servers },
     envVarsToCheck: []
   };
 
   // 1. Docs
-  plan.recommendedConfig['context7'] = {
+  servers['context7'] = {
     command: 'npx',
     args: ['-y', '@upstash/context7-mcp'],
     priority: 'MANDATORY',
@@ -60,7 +61,7 @@ export function buildMcpPlan(techStack = {}, dominantProvider = 'anthropic') {
   };
 
   // 2. Knowledge Graph
-  plan.recommendedConfig['codebase-memory-mcp'] = {
+  servers['codebase-memory-mcp'] = {
     command: 'npx',
     args: ['-y', 'codebase-memory-mcp'],
     priority: 'MANDATORY',
@@ -72,13 +73,13 @@ export function buildMcpPlan(techStack = {}, dominantProvider = 'anthropic') {
   const isLocalSmallModel = dominantProvider === 'qwen' || dominantProvider === 'ollama';
 
   if (isLocalSmallModel) {
-    plan.recommendedConfig['github-cli-fallback'] = {
+    servers['github-cli-fallback'] = {
       type: 'NATIVE_CLI_SKILL',
       tool: 'gh',
       description: 'Uses lightweight local gh CLI commands to minimize token overhead on local models.'
     };
   } else {
-    plan.recommendedConfig['github'] = {
+    servers['github'] = {
       command: 'npx',
       args: ['-y', '@modelcontextprotocol/server-github'],
       priority: 'HIGH',
@@ -90,7 +91,7 @@ export function buildMcpPlan(techStack = {}, dominantProvider = 'anthropic') {
 
   // 4. Optional UI/DevTools if frontend detected
   if (techStack.hasNext || techStack.hasAstro || techStack.hasExpo) {
-    plan.recommendedConfig['chrome-devtools'] = {
+    servers['chrome-devtools'] = {
       command: 'npx',
       args: ['-y', 'chrome-devtools-mcp'],
       priority: 'RECOMMENDED',

@@ -12,11 +12,12 @@ import fs from 'node:fs';
 
 export const MODEL_REGISTRY = {
   // Google Gemini
-  'gemini-3.1-pro': { provider: 'google', context: 1000000, tier: 'HIGH_REASONING', speed: 'MEDIUM' },
-  'gemini-3.8-flash': { provider: 'google', context: 1000000, tier: 'FAST_ECONOMY', speed: 'ULTRA_FAST' },
-  'gemini-1.5-pro': { provider: 'google', context: 2000000, tier: 'HIGH_REASONING', speed: 'MEDIUM' },
+  'gemini-2.5-pro': { provider: 'google', context: 1000000, tier: 'HIGH_REASONING', speed: 'MEDIUM' },
+  'gemini-2.5-flash': { provider: 'google', context: 1000000, tier: 'FAST_ECONOMY', speed: 'ULTRA_FAST' },
+  'gemini-2.5-flash-lite': { provider: 'google', context: 1000000, tier: 'FAST_ECONOMY', speed: 'ULTRA_FAST' },
 
   // Anthropic Claude
+  'claude-3-7-sonnet': { provider: 'anthropic', context: 200000, tier: 'HIGH_REASONING', speed: 'FAST' },
   'claude-3-5-sonnet': { provider: 'anthropic', context: 200000, tier: 'HIGH_REASONING', speed: 'FAST' },
   'claude-3-5-haiku': { provider: 'anthropic', context: 200000, tier: 'FAST_ECONOMY', speed: 'ULTRA_FAST' },
 
@@ -30,7 +31,6 @@ export const MODEL_REGISTRY = {
   'qwen2.5-coder-7b': { provider: 'qwen', context: 32768, tier: 'FAST_ECONOMY', speed: 'ULTRA_FAST' },
 
   // OpenAI
-  'o1': { provider: 'openai', context: 200000, tier: 'HIGH_REASONING', speed: 'THINKING' },
   'o3-mini': { provider: 'openai', context: 200000, tier: 'HIGH_REASONING', speed: 'FAST' },
   'gpt-4o': { provider: 'openai', context: 128000, tier: 'HIGH_REASONING', speed: 'FAST' },
   'gpt-4o-mini': { provider: 'openai', context: 128000, tier: 'FAST_ECONOMY', speed: 'ULTRA_FAST' }
@@ -73,82 +73,84 @@ export function detectAvailableFleet() {
 }
 
 /**
- * Recommends optimal officer assignment based on user's available fleet.
+ * Recommends optimal role assignment based on user's available fleet.
  * @param {string[]} availableModels List of model IDs available to user
  * @param {string} dominantProvider Preferred or detected provider
- * @returns {object} Officer-to-model mapping with context budgeting rules
+ * @returns {object} Role-to-model mapping with context budgeting rules
  */
 export function allocateFleet(availableModels = [], dominantProvider = 'anthropic') {
   // If no explicit models provided, create default based on preferred provider
   let models = availableModels.length > 0 ? availableModels : getDefaultFleetForProvider(dominantProvider);
 
   // Classify available models into Reasoning vs Fast Economy
-  let highReasoningModel = models.find(m => MODEL_REGISTRY[m]?.tier === 'HIGH_REASONING') || models[0] || 'claude-3-5-sonnet';
+  let highReasoningModel = models.find(m => MODEL_REGISTRY[m]?.tier === 'HIGH_REASONING') || models[0] || 'claude-3-7-sonnet';
   let fastEconomyModel = models.find(m => MODEL_REGISTRY[m]?.tier === 'FAST_ECONOMY') || models[models.length - 1] || 'claude-3-5-haiku';
 
   const officerRoster = {
-    'Captain (User)': {
+    'Human / Product Owner': {
       nature: 'HUMAN',
-      model: 'The Captain (Human User)',
+      starfleetAlias: 'Captain Jean-Luc Picard',
+      model: 'Human User',
       role: 'Strategic direction, requirements, executive sign-off'
     },
-    'William T. Riker (First Officer)': {
+    'Lead AI Orchestrator': {
       nature: 'AI_AGENT',
+      starfleetAlias: 'Cmdr. William T. Riker',
       model: highReasoningModel,
       contextBudget: getContextBudget(highReasoningModel),
       purpose: 'Lead AI orchestrator, task planning, subagent dispatch'
     },
-    'Lt. Cmdr. Data (Systems & Logic)': {
+    'Systems & Logic Analyst': {
       nature: 'AI_AGENT',
+      starfleetAlias: 'Lt. Cmdr. Data',
       model: highReasoningModel,
       contextBudget: getContextBudget(highReasoningModel),
-      purpose: 'Formal logic, DDD, RAG pipelines, mathematical algorithms'
+      purpose: 'Formal logic, DDD, workspace DAG, mathematical algorithms'
     },
-    'Lt. Cmdr. Geordi La Forge (Engineering)': {
+    'Architecture Lead': {
       nature: 'AI_AGENT',
+      starfleetAlias: 'Lt. Cmdr. Geordi La Forge',
       model: highReasoningModel,
       contextBudget: getContextBudget(highReasoningModel),
-      purpose: 'Architecture lead, monorepo boundaries, Docker, mentorship'
+      purpose: 'Architecture lead, monorepo boundaries, CI/build pipelines'
     },
-    'Lt. Tasha Yar (Security Guardrail)': {
+    'Security Guardrail': {
       nature: 'AI_AGENT',
-      model: highReasoningModel,
-      fallbackModel: fastEconomyModel,
-      contextBudget: getContextBudget(highReasoningModel),
-      purpose: 'Tactical security shields, input sanitization, Semgrep, defensive perimeter'
-    },
-    'Lt. Worf (Offensive Security & Red Team)': {
-      nature: 'AI_AGENT',
+      starfleetAlias: 'Lt. Cmdr. Worf / Lt. Tasha Yar',
       model: highReasoningModel,
       fallbackModel: fastEconomyModel,
       contextBudget: getContextBudget(highReasoningModel),
-      purpose: 'Adversarial red teaming (Strix), penetration testing, supply chain audits, away-team incursions'
+      purpose: 'Pre-tool shell/path guard, Semgrep SAST, skill security scanning'
     },
-    'Counselor Deanna Troi (Design & UX)': {
+    'Design System & UX Enforcer': {
       nature: 'AI_AGENT',
+      starfleetAlias: 'Counselor Deanna Troi',
       model: highReasoningModel,
       fallbackModel: fastEconomyModel,
       contextBudget: getContextBudget(highReasoningModel),
-      purpose: 'Design system, ergonomics, styling governance, WCAG AAA'
+      purpose: 'Design system, CLI ergonomics, styling governance, WCAG AAA'
     },
-    'Dr. Beverly Crusher (Health & Quality)': {
+    'Quality & Health Auditor': {
       nature: 'AI_AGENT',
+      starfleetAlias: 'Dr. Beverly Crusher',
       model: highReasoningModel,
       fallbackModel: fastEconomyModel,
       contextBudget: getContextBudget(highReasoningModel),
-      purpose: 'Code health, Ponytail minimalism, compiler diagnostics'
+      purpose: 'Post-edit policy check, YAGNI minimalism, anti-polling rules'
     },
-    'Ensign Wesley Crusher (Automation Runner)': {
+    'Test Automation Runner': {
       nature: 'AI_AGENT',
+      starfleetAlias: 'Ensign Wesley Crusher',
       model: fastEconomyModel,
       contextBudget: getContextBudget(fastEconomyModel),
-      purpose: 'Fast script execution, test runners (Vitest/Pytest/Playwright)'
+      purpose: 'Fast script execution, test runners (node --test/Vitest/Pytest)'
     },
-    'Q (The Q Continuum)': {
+    'Meta-Critic Evaluator': {
       nature: 'META_AGENT',
+      starfleetAlias: 'Q',
       model: highReasoningModel,
       contextBudget: getContextBudget(highReasoningModel),
-      purpose: 'Omniscient meta-critic, timeline audits, bias challenge'
+      purpose: 'Independent meta-critic, edge-case testing, doc-to-code parity'
     }
   };
 
@@ -163,7 +165,7 @@ export function allocateFleet(availableModels = [], dominantProvider = 'anthropi
         enabled: true,
         reasoningCore: 'en',
         ioLanguage: 'auto_detect_mirror',
-        tokenSavingsEstimate: '30-50%'
+        zeroTheatricalFiller: true
       }
     }
   };
@@ -194,7 +196,7 @@ function getDefaultFleetForProvider(provider) {
   switch (provider.toLowerCase()) {
     case 'anthropic':
     case 'claude':
-      return ['claude-3-5-sonnet', 'claude-3-5-haiku'];
+      return ['claude-3-7-sonnet', 'claude-3-5-haiku'];
     case 'deepseek':
       return ['deepseek-r1', 'deepseek-v3'];
     case 'qwen':
@@ -205,7 +207,7 @@ function getDefaultFleetForProvider(provider) {
     case 'google':
     case 'gemini':
     default:
-      return ['gemini-3.1-pro', 'gemini-3.8-flash'];
+      return ['gemini-2.5-pro', 'gemini-2.5-flash'];
   }
 }
 

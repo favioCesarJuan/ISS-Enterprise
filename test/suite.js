@@ -23,6 +23,7 @@ import { detectProject, ARCHETYPES } from '../src/detector.js';
 import { investigateCustomChoice, getTailoredQuestions, detectProjectLifecycle, PROJECT_LIFECYCLE } from '../src/advisor.js';
 import { allocateFleet, allocateCrewToFleet, MODEL_REGISTRY, generateFleetEnvConfig, generateOllamaPullScript } from '../src/fleet-manager.js';
 import { recommendSkillsForArchetype, compactAndFuseSkills, createNewSkill, validateSkillSafety } from '../src/skill-engine.js';
+import { resolveTheme, ROLES_MAP } from '../src/themes.js';
 import { buildMcpPlan, configureIndispensableTriad } from '../src/mcp-engine.js';
 import { scaffoldGreenfield } from '../src/scaffolder.js';
 import { generateGovernanceArchitecture } from '../src/generator.js';
@@ -182,21 +183,21 @@ runTest('Advisor: Unrecognized custom tech adopts fallback zero-dep governance',
 // -----------------------------------------------------------------------------
 // Test 3: Multi-Model Fleet Allocation & Context Budgeting
 // -----------------------------------------------------------------------------
-runTest('FleetManager: Allocates reasoning models to Data/Riker and economy to Wesley', () => {
+runTest('FleetManager: Allocates reasoning models to Orchestrator/Analyst and economy to TestRunner', () => {
   const fleet = allocateFleet(['claude-3-5-sonnet', 'claude-3-5-haiku'], 'anthropic');
   const roster = fleet.officerRoster;
-  assert.equal(roster['William T. Riker (First Officer)'].model, 'claude-3-5-sonnet');
-  assert.equal(roster['Lt. Cmdr. Data (Systems & Logic)'].model, 'claude-3-5-sonnet');
-  assert.equal(roster['Ensign Wesley Crusher (Automation Runner)'].model, 'claude-3-5-haiku');
-  assert.equal(roster['Ensign Wesley Crusher (Automation Runner)'].contextBudget.isConstrained, false);
+  assert.equal(roster['Lead AI Orchestrator'].model, 'claude-3-5-sonnet');
+  assert.equal(roster['Systems & Logic Analyst'].model, 'claude-3-5-sonnet');
+  assert.equal(roster['Test Automation Runner'].model, 'claude-3-5-haiku');
+  assert.equal(roster['Test Automation Runner'].contextBudget.isConstrained, false);
 });
 
 runTest('FleetManager: Context Budgeting quarantines models with <= 32k context (Qwen 7b)', () => {
   const fleet = allocateFleet(['qwen2.5-coder-72b', 'qwen2.5-coder-7b'], 'qwen');
-  const wesley = fleet.officerRoster['Ensign Wesley Crusher (Automation Runner)'];
-  assert.equal(wesley.contextBudget.isConstrained, true);
-  assert.equal(wesley.contextBudget.systemPromptBudget, 800);
-  assert.equal(wesley.contextBudget.quarantineInSubagent, true);
+  const runner = fleet.officerRoster['Test Automation Runner'];
+  assert.equal(runner.contextBudget.isConstrained, true);
+  assert.equal(runner.contextBudget.systemPromptBudget, 800);
+  assert.equal(runner.contextBudget.quarantineInSubagent, true);
 });
 
 // -----------------------------------------------------------------------------
@@ -234,17 +235,19 @@ runTest('SkillEngine: Compaction fuses multiple raw skills into canonical domain
 // -----------------------------------------------------------------------------
 runTest('McpEngine: Builds indispensable triad (context7, codebase-memory-mcp, github)', () => {
   const plan = buildMcpPlan({ hasAstro: true }, 'anthropic');
-  assert.ok(plan.recommendedConfig['context7']);
-  assert.ok(plan.recommendedConfig['codebase-memory-mcp']);
-  assert.ok(plan.recommendedConfig['github']);
-  assert.ok(plan.recommendedConfig['chrome-devtools'], 'Astro UI project must recommend devtools');
+  const servers = plan.recommendedConfig.mcpServers;
+  assert.ok(servers['context7']);
+  assert.ok(servers['codebase-memory-mcp']);
+  assert.ok(servers['github']);
+  assert.ok(servers['chrome-devtools'], 'Astro UI project must recommend devtools');
 });
 
 runTest('McpEngine: Replaces heavy GitHub MCP with lightweight gh CLI skill on small local models', () => {
   const plan = buildMcpPlan({}, 'qwen');
-  assert.ok(plan.recommendedConfig['github-cli-fallback']);
-  assert.equal(plan.recommendedConfig['github-cli-fallback'].type, 'NATIVE_CLI_SKILL');
-  assert.ok(!plan.recommendedConfig['github']);
+  const servers = plan.recommendedConfig.mcpServers;
+  assert.ok(servers['github-cli-fallback']);
+  assert.equal(servers['github-cli-fallback'].type, 'NATIVE_CLI_SKILL');
+  assert.ok(!servers['github']);
 });
 
 // -----------------------------------------------------------------------------
@@ -303,36 +306,35 @@ runTest('Scaffolder & Generator: End-to-end greenfield creation with live hooks 
   }, fleet, mcpPlan);
 
   assert.ok(fs.existsSync(path.join(testProjectDir, '.agents/hooks.json')));
-  assert.ok(fs.existsSync(path.join(testProjectDir, '.agents/hooks/tasha-security-shield.js')));
-  assert.ok(fs.existsSync(path.join(testProjectDir, '.agents/hooks/crusher-health-check.js')));
-  assert.ok(fs.existsSync(path.join(testProjectDir, '.agents/hooks/captains-log-writer.js')));
+  assert.ok(fs.existsSync(path.join(testProjectDir, '.agents/hooks/pre-tool-shell-guard.js')));
+  assert.ok(fs.existsSync(path.join(testProjectDir, '.agents/hooks/post-edit-policy-check.js')));
+  assert.ok(fs.existsSync(path.join(testProjectDir, '.agents/hooks/audit-log-writer.js')));
+  assert.ok(fs.existsSync(path.join(testProjectDir, '.agents/roles/lead-orchestrator.md')));
 
   // Verify Multi-AI Governance Contracts
   assert.ok(fs.existsSync(path.join(testProjectDir, 'CLAUDE.md')), 'CLAUDE.md must be generated');
   const claudeContent = fs.readFileSync(path.join(testProjectDir, 'CLAUDE.md'), 'utf-8');
   assert.ok(claudeContent.includes('Critical Guardrails'));
-  assert.ok(claudeContent.includes('Ponytail Protocol'));
-  assert.ok(claudeContent.includes('tasha-security-shield.js'));
+  assert.ok(claudeContent.includes('pre-tool-shell-guard.js'));
 
   assert.ok(fs.existsSync(path.join(testProjectDir, '.cursorrules')), '.cursorrules must be generated');
   const cursorContent = fs.readFileSync(path.join(testProjectDir, '.cursorrules'), 'utf-8');
-  assert.ok(cursorContent.includes('SECURITY PERIMETER - LT. TASHA YAR'));
+  assert.ok(cursorContent.includes('[SECURITY GUARDRAIL]'));
 
   assert.ok(fs.existsSync(path.join(testProjectDir, '.windsurfrules')), '.windsurfrules must be generated');
   
   const agentsMd = fs.readFileSync(path.join(testProjectDir, 'Agents.md'), 'utf-8');
-  assert.ok(agentsMd.includes('Mapeo Estructural y Jerarquía de Carpetas'));
+  assert.ok(agentsMd.includes('Folder Hierarchy'));
   assert.ok(agentsMd.includes('Atomic Design UI'));
-  assert.ok(agentsMd.includes('Lt. Tasha Yar'));
-  assert.ok(agentsMd.includes('Lt. Worf'));
+  assert.ok(agentsMd.includes('Security Guardrail'));
+  assert.ok(agentsMd.includes('Zero Theatrical Filler'));
 
   // Test hook execution via node
-  const tashaOutput = execSync(`node ${path.join(testProjectDir, '.agents/hooks/tasha-security-shield.js')} --test`, { encoding: 'utf-8' });
-  assert.ok(tashaOutput.includes('Tactical shield online'));
-  assert.ok(tashaOutput.includes('TASHA YAR'));
+  const guardOutput = execSync(`node ${path.join(testProjectDir, '.agents/hooks/pre-tool-shell-guard.js')} --test`, { encoding: 'utf-8' });
+  assert.ok(guardOutput.includes('All security guard tests PASSED'));
 
-  const crusherOutput = execSync(`node ${path.join(testProjectDir, '.agents/hooks/crusher-health-check.js')} --test`, { encoding: 'utf-8' });
-  assert.ok(crusherOutput.includes('Health check online'));
+  const policyOutput = execSync(`node ${path.join(testProjectDir, '.agents/hooks/post-edit-policy-check.js')} --test`, { encoding: 'utf-8' });
+  assert.ok(policyOutput.includes('All policy checks PASSED'));
   // Verify new fleet environment & script generation
   assert.ok(fs.existsSync(path.join(testProjectDir, '.env.fleet.example')), '.env.fleet.example must be generated');
   const fleetEnv = fs.readFileSync(path.join(testProjectDir, '.env.fleet.example'), 'utf-8');
@@ -347,8 +349,8 @@ runTest('Scaffolder & Generator: End-to-end greenfield creation with live hooks 
   assert.ok(instinctsContent.includes('Tactical Instincts & Learned Heuristics'));
   assert.ok(instinctsContent.includes('Minimalist Ponytail Diffs'));
 
-  // Verify CLAUDE.md incorporates Research-First Loop (ECC Doctrine)
-  assert.ok(claudeContent.includes('Research-First Engineering Loop (ECC Doctrine)'));
+  // Verify CLAUDE.md incorporates Engineering Loop
+  assert.ok(claudeContent.includes('Engineering Loop'));
   assert.ok(claudeContent.includes('Plan & Trace'));
   assert.ok(claudeContent.includes('.agents/instincts.md'));
 
@@ -491,36 +493,35 @@ runTest('Updater: Accurately detects installed framework version', () => {
 
 // Test 16: Physical Crew Manifests (.agents/crew/)
 // -----------------------------------------------------------------------------
-runTest('Crew: Has all 9 canonical Mirror Universe dossiers in .agents/crew', () => {
-  const crewDir = path.resolve('.agents/crew');
-  assert.ok(fs.existsSync(crewDir), '.agents/crew must exist');
+runTest('Roles: Has all 9 canonical role definitions in .agents/roles', () => {
+  const rolesDir = path.resolve('.agents/roles');
+  assert.ok(fs.existsSync(rolesDir), '.agents/roles must exist');
 
-  const expectedDossiers = [
-    'riker-orchestrator.md',
-    'data-systems-logic.md',
-    'geordi-architect.md',
-    'tasha-perimeter-shield.md',
-    'worf-offensive-security.md',
-    'troi-ux-docs.md',
-    'crusher-health.md',
-    'wesley-runner.md',
-    'q-meta-critic.md'
+  const expectedRoles = [
+    'lead-orchestrator.md',
+    'systems-logic-analyst.md',
+    'architecture-lead.md',
+    'perimeter-shield.md',
+    'security-guardrail.md',
+    'ux-design-enforcer.md',
+    'quality-health-auditor.md',
+    'test-automation-runner.md',
+    'meta-critic-evaluator.md'
   ];
 
-  for (const dossier of expectedDossiers) {
-    const p = path.join(crewDir, dossier);
-    assert.ok(fs.existsSync(p), `Dossier ${dossier} must exist`);
+  for (const roleFile of expectedRoles) {
+    const p = path.join(rolesDir, roleFile);
+    assert.ok(fs.existsSync(p), `Role file ${roleFile} must exist`);
     const content = fs.readFileSync(p, 'utf-8');
-    assert.ok(content.includes('name:'), `${dossier} must have name frontmatter`);
-    assert.ok(content.includes('corporateRole:'), `${dossier} must have corporateRole`);
+    assert.ok(content.includes('corporateRole:'), `${roleFile} must have corporateRole`);
+    assert.ok(content.includes('starfleetAlias:'), `${roleFile} must have starfleetAlias`);
   }
 });
 
 // Test 17: Skills Compact physical disk persistence
 // -----------------------------------------------------------------------------
 runTest('SkillEngine: compactAndFuseSkills writes fused markdown files to disk', () => {
-  const tmpSkillDir = path.resolve('.tmp-skills-test');
-  fs.mkdirSync(tmpSkillDir, { recursive: true });
+  const tmpSkillDir = fs.mkdtempSync(path.join(os.tmpdir(), 'iss-skills-test-'));
 
   const skillsToFuse = [
     { name: 'auth-validator', content: '# Auth Validator\nVerifies JWT claims.' },
@@ -532,6 +533,30 @@ runTest('SkillEngine: compactAndFuseSkills writes fused markdown files to disk',
   assert.ok(fs.existsSync(path.join(tmpSkillDir, '.agents/skills/security-guardrails/SKILL.md')));
 
   fs.rmSync(tmpSkillDir, { recursive: true, force: true });
+});
+
+// -----------------------------------------------------------------------------
+// Test 18: Optional Starfleet Theme (--theme=starfleet) & Role Mapping
+// -----------------------------------------------------------------------------
+runTest('Themes: Defaults to standard and supports optional --theme=starfleet', () => {
+  assert.equal(resolveTheme([]), 'standard');
+  assert.equal(resolveTheme(['--theme=starfleet']), 'starfleet');
+  assert.ok(ROLES_MAP.length >= 9);
+
+  const tmpThemeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'iss-theme-test-'));
+  const profile = detectProject(tmpThemeDir);
+  const fleet = allocateFleet([], 'gemini');
+  const mcpPlan = buildMcpPlan(profile.techStack, 'gemini');
+  generateGovernanceArchitecture(tmpThemeDir, { ...profile, styling_strategy: 'CSS Modules' }, fleet, mcpPlan, { theme: 'starfleet' });
+
+  const envContent = fs.readFileSync(path.join(tmpThemeDir, '.agents/.env'), 'utf-8');
+  assert.ok(envContent.includes('AGENT_THEME=starfleet'));
+
+  const agentsMd = fs.readFileSync(path.join(tmpThemeDir, 'Agents.md'), 'utf-8');
+  assert.ok(agentsMd.includes('Captain (Human User)'));
+  assert.ok(agentsMd.includes('Zero Theatrical Filler'));
+
+  fs.rmSync(tmpThemeDir, { recursive: true, force: true });
 });
 
 console.log('----------------------------------------------------');

@@ -314,14 +314,13 @@ export function getTailoredQuestions(detectedProfile) {
     ]
   });
 
-  // Question 7: Crew Flavor / Identity
+  // Question 7: Role Identity / Theme (Option A)
   questions.push({
     id: 'crew_flavor',
-    title: '🎭 ¿Qué estilo de identidad deseas para la tripulación?',
+    title: '🎭 ¿Qué tema de nomenclatura deseas para los roles de gobernanza?',
     options: [
-      'Híbrido: Star Trek TNG con subtítulo corporativo formal [Recomendado]',
-      'Star Trek TNG Nativo: Inmersión temática completa (Picard, Data, Tasha Yar, etc.)',
-      'Corporativo Formal: Títulos enterprise puros (StrategicOrchestrator, SecurityGuardrail)',
+      'Estándar (Funcional): Nombres técnicos claros (LeadOrchestrator, SecurityGuardrail) [Recomendado]',
+      'Starfleet (Opcional): Alias de Star Trek TNG (Picard, Riker, Data, Worf, Crusher) — 0 tokens extra',
       '[Otra / Personalizada]'
     ]
   });
@@ -361,8 +360,8 @@ export function detectProjectLifecycle(targetDir = process.cwd()) {
   const hasTests = exists('test') || exists('tests') || exists('vitest.config.ts') || exists('jest.config.js');
   const hasLinter = exists('eslint.config.js') || exists('.eslintrc.json') || exists('biome.json');
   const hasMcp = exists('.mcp/mcp-servers.config.json');
-  const hasCrew = exists('.agents/crew');
-  const hasSemgrep = exists('.semgrep.yml') || exists('.agents/rules/semgrep-starfleet.yml');
+  const hasCrew = exists('.agents/roles') || exists('.agents/crew');
+  const hasSemgrep = exists('.semgrep.yml') || exists('.agents/rules/semgrep-governance.yml');
   const hasGitHooks = exists('.git/hooks/pre-commit');
 
   return {

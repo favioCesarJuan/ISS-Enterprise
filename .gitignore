@@ -14,4 +14,10 @@ Thumbs.db
 dist/
 coverage/
 scratch/
+.tmp-*
+.circuit-test-*
+.agents/.circuit_state.json
+.agents.backup.*
+.agents/audit_log.json
+.agents/audit_log.md
 *.tmp

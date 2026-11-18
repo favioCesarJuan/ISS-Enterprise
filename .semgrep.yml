@@ -1,16 +1,16 @@
 rules:
-  - id: iss-prohibit-continuous-polling
+  - id: gov-prohibit-continuous-polling
     languages: [javascript, typescript]
-    message: "🚨 [BEVERLY CRUSHER]: Continuous polling via setInterval is prohibited by the Ponytail Minimalist Protocol. Use WebSockets, SSE, or reactive event triggers."
+    message: "[POLICY CHECK]: Continuous polling with setInterval is prohibited. Use WebSockets, SSE, or reactive events."
     severity: ERROR
     patterns:
       - pattern-either:
           - pattern: setInterval($FN, ...)
       - pattern-regex: (fetch|axios|http\.get|https\.get|request)\s*\(
 
-  - id: iss-enforce-node-prefix
+  - id: gov-enforce-node-prefix
     languages: [javascript, typescript]
-    message: "⚠️ [GEORDI LA FORGE]: Core engine hygiene directive: Always use canonical 'node:' prefix for core Node.js modules."
+    message: "[ARCHITECTURE POLICY]: Always use canonical 'node:' prefix for core Node.js modules (e.g., 'node:fs', 'node:path')."
     severity: WARNING
     patterns:
       - pattern-either:
@@ -18,9 +18,9 @@ rules:
           - pattern: const $X = require('$MOD')
       - pattern-regex: "['\"](fs|path|child_process|crypto|os|util|events|stream|buffer|http|https|net|tls|url|dns|readline)['\"]"
 
-  - id: iss-tasha-command-injection
+  - id: gov-command-injection
     languages: [javascript, typescript]
-    message: "🚨 [TASHA YAR]: Command injection risk detected in child_process.exec with unsanitized variables. Use execFile or parameterized inputs."
+    message: "[SECURITY GUARD]: Command injection hazard. Unsanitized variable concatenation inside child_process.exec detected. Use execFile or sanitized arguments."
     severity: ERROR
     patterns:
       - pattern-either:
@@ -29,18 +29,18 @@ rules:
           - pattern: exec($CMD + $VAR, ...)
           - pattern: exec(`${$CMD}...`, ...)
 
-  - id: iss-prohibit-eval
+  - id: gov-prohibit-eval
     languages: [javascript, typescript]
-    message: "🚨 [TASHA YAR & DATA]: Code execution via eval or new Function is prohibited by ISS Tactical Security perimeter."
+    message: "[SECURITY GUARD]: Dynamic code execution via eval or new Function is prohibited."
     severity: ERROR
     patterns:
       - pattern-either:
           - pattern: eval(...)
           - pattern: new Function(...)
 
-  - id: iss-secret-leak-guard
+  - id: gov-hardcoded-secret
     languages: [javascript, typescript]
-    message: "🚨 [TASHA YAR]: Hardcoded credentials detected. Use process.env or secret manager."
+    message: "[SECURITY GUARD]: Hardcoded API key or credential pattern detected. Store credentials in .env or a secret manager."
     severity: ERROR
     patterns:
       - pattern-regex: (?i)(ai_key|api_key|secret_key|private_key|auth_token)\s*[:=]\s*['"][a-zA-Z0-9_\-]{20,}['"]
