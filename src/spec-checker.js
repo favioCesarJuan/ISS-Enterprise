@@ -271,10 +271,14 @@ export function auditSpecDrift(rootDir = process.cwd(), options = {}) {
  * @returns {import('../types/index.d.ts').CreateSpecResult}
  */
 export function createSpecTemplate(targetDir = process.cwd(), slug = '', options = {}) {
-  const sanitizedSlug = String(slug || '')
+  const rawSlug = String(slug || '')
     .toLowerCase()
-    .replace(/[^a-z0-9-]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+    .replace(/[^a-z0-9-]+/g, '-');
+  let start = 0;
+  let end = rawSlug.length;
+  while (start < end && rawSlug[start] === '-') start++;
+  while (end > start && rawSlug[end - 1] === '-') end--;
+  const sanitizedSlug = rawSlug.slice(start, end);
 
   if (!sanitizedSlug) {
     throw new Error('Invalid spec slug: must contain at least one alphanumeric character.');

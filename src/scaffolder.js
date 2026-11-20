@@ -44,7 +44,12 @@ export function scaffoldGreenfieldProject(targetDir, choices = {}) {
   const purpose = choices.project_purpose || choices.purpose || choices.archetype || 'SAAS_MONOREPO';
   const distribution = choices.file_distribution || choices.distribution || '';
   const projectName = choices.projectName || path.basename(root);
-  const safeSlug = projectName.toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '') || 'app';
+  const rawSlug = projectName.toLowerCase().replace(/[^a-z0-9_-]+/g, '-');
+  let start = 0;
+  let end = rawSlug.length;
+  while (start < end && rawSlug[start] === '-') start++;
+  while (end > start && rawSlug[end - 1] === '-') end--;
+  const safeSlug = rawSlug.slice(start, end) || 'app';
 
   // 1. Standard Gitignore
   writeFile('.gitignore', `# Node, Python, Go & Rust

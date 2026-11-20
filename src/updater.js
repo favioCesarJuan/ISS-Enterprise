@@ -183,7 +183,10 @@ export async function runFrameworkUpdate(targetDir = process.cwd(), options = {}
         }
       });
     } else {
-      execFileSync('git', ['clone', '--depth', '1', source, quarantineDir], { stdio: 'ignore' });
+      if (typeof source !== 'string' || source.startsWith('-') || !/^(https?:\/\/|ssh:\/\/|git@)[^\s]+$/.test(source)) {
+        throw new Error(`Invalid upstream repository source: "${String(source)}"`);
+      }
+      execFileSync('git', ['clone', '--depth', '1', '--', source, quarantineDir], { stdio: 'ignore' });
     }
 
     const upstreamPkg = JSON.parse(fs.readFileSync(path.join(quarantineDir, 'package.json'), 'utf-8'));
