@@ -526,7 +526,10 @@ async function handleUpdate(args) {
   const srcArg = args.find(a => a.startsWith('--source='));
   const source = srcArg ? srcArg.slice('--source='.length) : undefined;
   const targetDir = args.find(a => !a.startsWith('-')) || process.cwd();
-  await runFrameworkUpdate(targetDir, { checkOnly, yes: autoYes, source });
+  const res = await runFrameworkUpdate(targetDir, { checkOnly, yes: autoYes, source });
+  if (res && (res.aborted || res.success === false)) {
+    process.exitCode = 1;
+  }
 }
 
 /**

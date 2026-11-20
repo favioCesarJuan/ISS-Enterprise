@@ -293,7 +293,7 @@ function buildClaudeMarkdown(ctx) {
 - **Shield Rigidity**: \`${ctx.rigidity}\`
 ${discoveryGate}
 ## Critical Guardrails
-1. **Security**: NEVER execute destructive commands (\`rm -rf /\`, wildcards on root, piped remote \`curl | bash\`, \`chmod 777\`).
+1. **Security**: NEVER execute destructive commands (recursive root deletion, wildcards on root, piped remote shell scripts, or world-writable permissions).
 2. **Quality & Policy**:
    - Enforce **KISS** (small cohesive modules, intent-revealing names, no premature abstractions, explicit recoverable failure handling).
    - BAN continuous HTTP polling (\`setInterval(() => fetch(...))\`). Use WebSockets, SSE, or event-driven revalidation.
