@@ -23,7 +23,7 @@
       "name": "post-edit-policy-check",
       "path": "./.agents/hooks/post-edit-policy-check.js",
       "timeout": 8000,
-      "description": "Scans modified files for prohibited continuous polling, styling policy drift, and debug logs."
+      "description": "Scans modified files for prohibited continuous polling, styling policy drift, debug logs, and KISS complexity/error-handling heuristics."
     },
     {
       "event": "postInvocation",

@@ -11,39 +11,73 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import {
+  loadThemeConfig,
+  formatMissionClock,
+  computeMissionDateCode,
+  getHookLabel
+} from './theme-loader.js';
 
-const isStarfleet = () => process.env.AGENT_THEME === 'starfleet';
+export { formatMissionClock, computeMissionDateCode };
 
-export function formatAuditTimestamp(date = new Date()) {
-  if (isStarfleet()) {
-    const year = date.getUTCFullYear();
-    const start = new Date(Date.UTC(year, 0, 0));
-    const diff = date - start;
-    const oneDay = 1000 * 60 * 60 * 24;
-    const dayOfYear = Math.floor(diff / oneDay);
-    const stardate = 41000 + (year - 2024) * 1000 + (dayOfYear / 365) * 1000;
-    return `Stardate ${stardate.toFixed(1)}`;
-  }
-  return date.toISOString();
-}
+export const SPEC_AUDIT_EVENTS = {
+  SPEC_DRAFTED: 'spec_drafted',
+  COLD_REVIEW_ABORT: 'cold_review_abort',
+  COLD_REVIEW_PASS: 'cold_review_pass',
+  SPEC_APPROVED: 'spec_approved'
+};
 
-export function calculateStardate(date = new Date()) {
-  const year = date.getUTCFullYear();
-  const start = new Date(Date.UTC(year, 0, 0));
-  const diff = date - start;
-  const oneDay = 1000 * 60 * 60 * 24;
-  const dayOfYear = Math.floor(diff / oneDay);
-  const stardate = 41000 + (year - 2024) * 1000 + (dayOfYear / 365) * 1000;
-  return stardate.toFixed(1);
+/**
+ * @typedef {import('./theme-loader.js').ThemeOptions} ThemeOptions
+ * @typedef {{
+ *   specId?: string|null,
+ *   gate?: string|null,
+ *   verdict?: string|null,
+ *   reviewerModel?: string|null,
+ *   crossModel?: boolean
+ * }} SpecAuditMeta
+ * @typedef {{
+ *   from?: string,
+ *   to?: string,
+ *   event?: string,
+ *   mission?: string,
+ *   healthStatus?: string,
+ *   securityStatus?: string,
+ *   details?: string,
+ *   filesTouched?: string[],
+ *   specMeta?: SpecAuditMeta
+ * }} AuditEntryInput
+ * @typedef {{
+ *   id: string,
+ *   epochMs: number,
+ *   timestamp: string,
+ *   from: string,
+ *   to: string,
+ *   event: string,
+ *   mission: string,
+ *   healthStatus: string,
+ *   securityStatus: string,
+ *   details: string,
+ *   filesTouched: string[],
+ *   missionClock?: string,
+ *   specMeta?: SpecAuditMeta
+ * }} AuditLogRecord
+ */
+
+/** @param {Date} [date] @param {ThemeOptions} [options] @returns {string} */
+export function formatAuditTimestamp(date = new Date(), options = {}) {
+  return formatMissionClock(date, options);
 }
 
 /**
  * Appends an audit log entry to both JSON and Markdown representations.
- * @param {object} entry
- * @param {object} options { rootDir?: string }
+ * @param {AuditEntryInput} [entry]
+ * @param {ThemeOptions} [options]
+ * @returns {AuditLogRecord}
  */
 export function appendAuditLog(entry = {}, options = {}) {
   const rootDir = options.rootDir ? path.resolve(options.rootDir) : process.cwd();
+  const theme = loadThemeConfig({ rootDir, theme: options.theme });
   const logJson = path.join(rootDir, '.agents', 'audit_log.json');
   const logMd = path.join(rootDir, '.agents', 'audit_log.md');
 
@@ -53,14 +87,15 @@ export function appendAuditLog(entry = {}, options = {}) {
   }
 
   const now = new Date();
-  const displayTime = formatAuditTimestamp(now);
+  const displayTime = formatAuditTimestamp(now, { rootDir, theme: options.theme });
 
+  /** @type {AuditLogRecord} */
   const fullEntry = {
     id: `log-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     epochMs: now.getTime(),
     timestamp: now.toISOString(),
-    from: entry.from || (isStarfleet() ? 'Captain Picard' : 'Product Owner'),
-    to: entry.to || (isStarfleet() ? 'Cmdr. Riker' : 'Lead Orchestrator'),
+    from: entry.from || theme.defaults.from,
+    to: entry.to || theme.defaults.to,
     event: entry.event || 'governance_action',
     mission: entry.mission || 'General operational duty',
     healthStatus: entry.healthStatus || 'HEALTHY',
@@ -69,10 +104,21 @@ export function appendAuditLog(entry = {}, options = {}) {
     filesTouched: entry.filesTouched || []
   };
 
-  if (isStarfleet()) {
-    fullEntry.stardate = calculateStardate(now);
+  if (theme.mode !== 'standard') {
+    fullEntry.missionClock = computeMissionDateCode(now);
   }
 
+  if (entry.specMeta && typeof entry.specMeta === 'object') {
+    fullEntry.specMeta = {
+      specId: entry.specMeta.specId || null,
+      gate: entry.specMeta.gate || null,
+      verdict: entry.specMeta.verdict || null,
+      reviewerModel: entry.specMeta.reviewerModel || null,
+      crossModel: Boolean(entry.specMeta.crossModel)
+    };
+  }
+
+  /** @type {AuditLogRecord[]} */
   let logs = [];
   if (fs.existsSync(logJson)) {
     try {
@@ -88,10 +134,14 @@ export function appendAuditLog(entry = {}, options = {}) {
     ? `# Agent Governance Audit Log\n\nImmutable ledger of guardrail checks, policy evaluations, and agent handoffs.\n\n---\n\n`
     : '';
 
+  const specSummary = fullEntry.specMeta
+    ? `\n- **Spec Review**: \`${fullEntry.specMeta.specId || 'spec'}\` | Gate: \`${fullEntry.specMeta.gate || '-'}\` | Verdict: \`${fullEntry.specMeta.verdict || '-'}\`${fullEntry.specMeta.reviewerModel ? ` | Reviewer: \`${fullEntry.specMeta.reviewerModel}\` (crossModel=${fullEntry.specMeta.crossModel})` : ''}`
+    : '';
+
   const mdEntry = `### ${displayTime} — \`${fullEntry.event}\`
 - **From**: \`${fullEntry.from}\` -> **To**: \`${fullEntry.to}\`
 - **Task**: ${fullEntry.mission}
-- **Security**: \`${fullEntry.securityStatus}\` | **Policy Health**: \`${fullEntry.healthStatus}\`
+- **Security**: \`${fullEntry.securityStatus}\` | **Policy Health**: \`${fullEntry.healthStatus}\`${specSummary}
 ${fullEntry.filesTouched.length > 0 ? `- **Files Touched**: ${fullEntry.filesTouched.map(f => `\`${f}\``).join(', ')}` : ''}
 ${fullEntry.details ? `\n> ${fullEntry.details.replace(/\n/g, '\n> ')}\n` : ''}
 ---
@@ -105,8 +155,9 @@ export const appendLogEntry = appendAuditLog;
 
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
   if (process.argv.includes('--test')) {
-    console.log('[AUDIT LOG]: Running audit log writer self-test...');
+    console.log(`${getHookLabel('sim')} ${getHookLabel('audit')}: Running audit log writer self-test...`);
     const tmpDir = fs.mkdtempSync(path.join(process.cwd(), '.tmp-audit-'));
+    let exitCode = 1;
     try {
       const entry = appendAuditLog({
         from: 'Lead Orchestrator',
@@ -124,13 +175,13 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(im
       if (jsonOk && mdOk) {
         console.log(`Audit Log recorded entry: ${entry.id} (${entry.timestamp})`);
         console.log('[AUDIT LOG]: Self-test PASSED.');
-        process.exit(0);
+        exitCode = 0;
       } else {
         console.error('Failed to write audit log files.');
-        process.exit(1);
       }
     } finally {
       fs.rmSync(tmpDir, { recursive: true, force: true });
     }
+    process.exit(exitCode);
   }
 }

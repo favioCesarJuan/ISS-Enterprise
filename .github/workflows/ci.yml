@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [ main, master ]
 
+permissions:
+  contents: read
+
 jobs:
   test-and-validate:
     name: Run Suite on Node ${{ matrix.node-version }}.x
@@ -28,10 +31,10 @@ jobs:
       - name: Run Doctor Governance Audit
         run: node ./bin/iss.js doctor
 
-      - name: Run Quickstart Demo (Standard & Starfleet)
+      - name: Run Quickstart Demo (Standard & Naval)
         run: |
           node examples/quickstart-demo.js
-          node examples/quickstart-demo.js --theme=starfleet
+          node examples/quickstart-demo.js --theme=naval
 
       - name: Validate hooks.json and mcp-servers.config.json Schemas
         run: |
@@ -48,6 +51,26 @@ jobs:
             assert.ok(mcp.mcpServers && typeof mcp.mcpServers === 'object', 'mcpServers root key required');
             console.log('JSON schemas verified.');
           "
+
+  typecheck:
+    name: TypeScript Static Type Check (JSDoc + checkJs)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: Install Dev Tooling (TypeScript + @types/node)
+        run: pnpm install --frozen-lockfile
+
+      - name: Run tsc --noEmit
+        run: pnpm run typecheck
 
   semgrep-sast:
     name: Semgrep SAST Scan

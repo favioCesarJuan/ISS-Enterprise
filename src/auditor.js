@@ -15,6 +15,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { spawnSync } from 'node:child_process';
+import { auditSpecDrift } from './spec-checker.js';
 
 // ANSI terminal colors
 const c = {
@@ -29,13 +30,49 @@ const c = {
 };
 
 /**
+ * @param {string} mcpConfigFile
+ * @param {(msg: string) => void} logPass
+ * @param {(msg: string) => void} logWarn
+ * @param {(msg: string) => void} logFail
+ */
+function auditMcpConfig(mcpConfigFile, logPass, logWarn, logFail) {
+  if (!fs.existsSync(mcpConfigFile)) {
+    logWarn('No .mcp/mcp-servers.config.json found. Run `iss mcps` to provision sensor triad.');
+    return;
+  }
+  try {
+    const mcpConfig = JSON.parse(fs.readFileSync(mcpConfigFile, 'utf-8'));
+    const servers = mcpConfig.mcpServers || {};
+    const serverNames = Object.keys(servers);
+    logPass(`MCP Configuration verified: ${serverNames.length} server(s) configured (${serverNames.join(', ')}).`);
+
+    for (const [name, srv] of Object.entries(servers)) {
+      const cmdStr = `${srv.command || ''} ${(srv.args || []).join(' ')}`;
+      if (/\brm\s+-[rR]f|\bcurl\b.*\|\s*sh|\bchmod\s+777/i.test(cmdStr)) {
+        logFail(`AgentShield Warning: Insecure command pattern detected in MCP server '${name}': ${cmdStr}`);
+      }
+      if (!srv.env) continue;
+      for (const [envVar, envVal] of Object.entries(srv.env)) {
+        if (/ghp_[a-zA-Z0-9]{30,}|sk-[a-zA-Z0-9]{20,}/.test(String(envVal))) {
+          logFail(`AgentShield Warning: Plaintext secret detected in MCP server '${name}' env (${envVar}). Use environment variables.`);
+        }
+      }
+    }
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    logFail(`MCP configuration file .mcp/mcp-servers.config.json is corrupted: ${msg}`);
+  }
+}
+
+/**
  * Runs a complete governance audit on a target directory.
- * @param {string} targetDir
- * @param {object} options
- * @returns {object} Audit report { ok, passed, warnings, failures }
+ * @param {string} [targetDir]
+ * @param {import('../types/index.d.ts').AuditOptions} [options]
+ * @returns {import('../types/index.d.ts').AuditReport} Audit report { ok, passed, warnings, failures }
  */
 export function runGovernanceAudit(targetDir = process.cwd(), options = {}) {
   const root = path.resolve(targetDir);
+  /** @type {import('../types/index.d.ts').AuditReport} */
   const report = {
     targetDir: root,
     passed: [],
@@ -44,8 +81,11 @@ export function runGovernanceAudit(targetDir = process.cwd(), options = {}) {
     ok: true
   };
 
+  /** @param {string} msg */
   const logPass = (msg) => report.passed.push(msg);
+  /** @param {string} msg */
   const logWarn = (msg) => report.warnings.push(msg);
+  /** @param {string} msg */
   const logFail = (msg) => {
     report.failures.push(msg);
     report.ok = false;
@@ -81,7 +121,8 @@ export function runGovernanceAudit(targetDir = process.cwd(), options = {}) {
         }
       }
     } catch (e) {
-      logFail(`.agents/hooks.json is corrupted or invalid JSON: ${e.message}`);
+      const msg = e instanceof Error ? e.message : String(e);
+      logFail(`.agents/hooks.json is corrupted or invalid JSON: ${msg}`);
     }
   }
 
@@ -150,14 +191,12 @@ export function runGovernanceAudit(targetDir = process.cwd(), options = {}) {
 
   // 5. Check Audit Log Ledger and Tactical Instincts
   const auditLogFile = path.join(agentsDir, 'audit_log.json');
-  const legacyLogFile = path.join(agentsDir, 'captains_log.json');
-  const logFile = fs.existsSync(auditLogFile) ? auditLogFile : legacyLogFile;
-  if (fs.existsSync(logFile)) {
+  if (fs.existsSync(auditLogFile)) {
     try {
-      const logs = JSON.parse(fs.readFileSync(logFile, 'utf-8'));
-      logPass(`Audit log ledger (${path.basename(logFile)}) online with ${Array.isArray(logs) ? logs.length : 0} entries.`);
+      const logs = JSON.parse(fs.readFileSync(auditLogFile, 'utf-8'));
+      logPass(`Audit log ledger (${path.basename(auditLogFile)}) online with ${Array.isArray(logs) ? logs.length : 0} entries.`);
     } catch {
-      logWarn(`${path.basename(logFile)} is present but invalid JSON.`);
+      logWarn(`${path.basename(auditLogFile)} is present but invalid JSON.`);
     }
   }
 
@@ -171,44 +210,25 @@ export function runGovernanceAudit(targetDir = process.cwd(), options = {}) {
   }
 
   // 7. AgentShield Audit: MCP Servers Configuration & Sensitive Leaks
-  const mcpConfigFile = path.join(root, '.mcp', 'mcp-servers.config.json');
-  if (fs.existsSync(mcpConfigFile)) {
-    try {
-      const mcpConfig = JSON.parse(fs.readFileSync(mcpConfigFile, 'utf-8'));
-      const servers = mcpConfig.mcpServers || {};
-      const serverNames = Object.keys(servers);
-      logPass(`MCP Configuration verified: ${serverNames.length} server(s) configured (${serverNames.join(', ')}).`);
+  auditMcpConfig(path.join(root, '.mcp', 'mcp-servers.config.json'), logPass, logWarn, logFail);
 
-      // Audit server commands for suspicious injection vectors
-      for (const [name, srv] of Object.entries(servers)) {
-        const cmdStr = `${srv.command || ''} ${(srv.args || []).join(' ')}`;
-        if (/\brm\s+-[rR]f|\bcurl\b.*\|\s*sh|\bchmod\s+777/i.test(cmdStr)) {
-          logFail(`AgentShield Warning: Insecure command pattern detected in MCP server '${name}': ${cmdStr}`);
-        }
-        // Check for exposed plaintext tokens in env configuration
-        if (srv.env) {
-          for (const [envVar, envVal] of Object.entries(srv.env)) {
-            if (/ghp_[a-zA-Z0-9]{30,}|sk-[a-zA-Z0-9]{20,}/.test(String(envVal))) {
-              logFail(`AgentShield Warning: Plaintext secret detected in MCP server '${name}' env (${envVar}). Use environment variables.`);
-            }
-          }
-        }
-      }
-    } catch (e) {
-      logFail(`MCP configuration file .mcp/mcp-servers.config.json is corrupted: ${e.message}`);
-    }
-  } else {
-    logWarn('No .mcp/mcp-servers.config.json found. Run `iss mcps` to provision sensor triad.');
-  }
-
-  // 8. AgentShield Audit: Git repository secret hygiene
+  // 8. AgentShield Audit: Git repository secret hygiene & local theme privacy
   const envFile = path.join(root, '.env');
   const gitignoreFile = path.join(root, '.gitignore');
+  const gitignoreContent = fs.existsSync(gitignoreFile) ? fs.readFileSync(gitignoreFile, 'utf-8') : '';
   if (fs.existsSync(envFile)) {
-    if (!fs.existsSync(gitignoreFile) || !fs.readFileSync(gitignoreFile, 'utf-8').includes('.env')) {
+    if (!gitignoreContent.includes('.env')) {
       logFail('AgentShield Alert: .env file exists on disk but is NOT ignored in .gitignore! Secrets at risk.');
     } else {
       logPass('.env file is properly ignored by .gitignore.');
+    }
+  }
+  const localThemeFile = path.join(agentsDir, 'theme.local.json');
+  if (fs.existsSync(localThemeFile)) {
+    if (!gitignoreContent.includes('theme.local.json')) {
+      logWarn('Privacy Notice: .agents/theme.local.json exists without being listed in .gitignore.');
+    } else {
+      logPass('.agents/theme.local.json is ignored by .gitignore.');
     }
   }
 
@@ -239,12 +259,37 @@ export function runGovernanceAudit(targetDir = process.cwd(), options = {}) {
     logPass('Skill security protocol active (Native engine ready; SkillSpector optional for deep scanning).');
   }
 
+  // 12. SDD Specification Drift Check (Deterministic, zero LLM tokens)
+  const specAudit = auditSpecDrift(root, options);
+  if (specAudit.specsFound === 0) {
+    logPass('SDD Spec Drift check ready (no docs/designs/*.md specs present yet).');
+  } else {
+    for (const msg of specAudit.passed) logPass(msg);
+    for (const msg of specAudit.warnings) logWarn(msg);
+    for (const msg of specAudit.failures) logFail(msg);
+  }
+
+  // 13. Project Context Memory (.agents/project-context.json)
+  const projectCtxFile = path.join(agentsDir, 'project-context.json');
+  if (fs.existsSync(projectCtxFile)) {
+    try {
+      const ctx = JSON.parse(fs.readFileSync(projectCtxFile, 'utf-8'));
+      logPass(`Project context verified: domain='${ctx.domain || 'General'}', arch='${ctx.architecturePattern || 'Adaptive'}', rigidity='${ctx.shieldRigidity || 'standard'}'.`);
+      if (ctx.interviewCompleted === false) {
+        logWarn('Project context uses automated defaults (interviewCompleted=false). Run `iss init --reconfigure` or complete the AI Discovery Gate.');
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      logFail(`.agents/project-context.json is corrupted or invalid JSON: ${msg}`);
+    }
+  }
+
   return report;
 }
 
 /**
  * Formats and prints an audit report to the console.
- * @param {object} report
+ * @param {import('../types/index.d.ts').AuditReport} report
  */
 export function printAuditReport(report) {
   console.log(`\n${c.bold}${c.gold}🩺 ISS-ENTERPRISE GOVERNANCE & DRIFT AUDITOR${c.reset}`);

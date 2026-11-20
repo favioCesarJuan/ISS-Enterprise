@@ -11,16 +11,25 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { getHookLabel } from './theme-loader.js';
 
 const WINDOW_MS = 10 * 60 * 1000; // 10 minutes window
 const MAX_CHURN_THRESHOLD = 5;    // Maximum edits allowed per file within window
 
-const guardLabel = () => (process.env.AGENT_THEME === 'starfleet' ? '[WORF CIRCUIT BREAKER]' : '[CIRCUIT BREAKER]');
+const guardLabel = () => getHookLabel('circuit');
+const simLabel = () => getHookLabel('sim');
 
 export function getStateFilePath(rootDir = process.cwd()) {
   return path.join(path.resolve(rootDir), '.agents', '.circuit_state.json');
 }
 
+/**
+ * @typedef {{ targets: Record<string, number[]> }} CircuitState
+ * @typedef {{ tool?: string, args?: { TargetFile?: string, target_file?: string, file?: string, path?: string } }} CircuitPayload
+ * @typedef {{ rootDir?: string, maxThreshold?: number, windowMs?: number }} CircuitOptions
+ */
+
+/** @param {string} [rootDir] @returns {CircuitState} */
 export function loadState(rootDir = process.cwd()) {
   const filePath = getStateFilePath(rootDir);
   try {
@@ -31,6 +40,7 @@ export function loadState(rootDir = process.cwd()) {
   return { targets: {} };
 }
 
+/** @param {CircuitState} state @param {string} [rootDir] */
 export function saveState(state, rootDir = process.cwd()) {
   const filePath = getStateFilePath(rootDir);
   const dir = path.dirname(filePath);
@@ -51,8 +61,8 @@ export function resetCircuit(rootDir = process.cwd()) {
 
 /**
  * Evaluates whether an edit operation trips the circuit breaker.
- * @param {object} payload { tool: string, args: object }
- * @param {object} options { rootDir?: string, maxThreshold?: number, windowMs?: number }
+ * @param {CircuitPayload} [payload]
+ * @param {CircuitOptions} [options]
  * @returns {{ allowed: boolean, reason?: string, count: number }}
  */
 export function evaluateCircuit(payload = {}, options = {}) {
@@ -113,7 +123,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(im
   }
 
   if (process.argv.includes('--test')) {
-    console.log(`${guardLabel()}: Running Circuit Breaker self-test...`);
+    console.log(`${simLabel()} ${guardLabel()}: Running Circuit Breaker self-test...`);
     const testDir = fs.mkdtempSync(path.join(process.cwd(), '.circuit-test-'));
 
     try {

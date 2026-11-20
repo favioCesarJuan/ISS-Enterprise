@@ -14,7 +14,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import readline from 'node:readline';
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { detectProject, ARCHETYPES } from './detector.js';
 import { getTailoredQuestions, investigateCustomChoice, runLifecycleAdvisor } from './advisor.js';
 import { detectAvailableFleet, allocateCrewToFleet, PROVIDER_REGISTRY } from './fleet-manager.js';
@@ -24,7 +24,8 @@ import { scaffoldGreenfield } from './scaffolder.js';
 import { generateGovernanceArchitecture } from './generator.js';
 import { runGovernanceAudit, printAuditReport } from './auditor.js';
 import { runFrameworkUpdate } from './updater.js';
-import { resolveTheme, printCrewThemeNotice } from './themes.js';
+import { resolveTheme, printCrewThemeNotice, getHookLabel, getZoneName } from './themes.js';
+import { createSpecTemplate, auditSpecDrift } from './spec-checker.js';
 
 // ANSI terminal color helpers
 const c = {
@@ -51,10 +52,15 @@ ${c.gold}    ██╗███████╗███████╗    ██
     ██║███████║███████║    ███████╗██║ ╚████║   ██║   ███████╗██║  ██║
     ╚═╝╚══════╝╚══════╝    ╚══════╝╚═╝  ╚═══╝   ╚═╝   ╚══════╝╚═╝  ╚═╝${c.reset}
   ${c.bold}${c.silver}ISS-ENTERPRISE: MULTI-STACK GOVERNANCE & SCAFFOLDING CLI${c.reset}
-  ${c.dim}Standard Functional Governance // Optional Starfleet Theme (--theme=starfleet)${c.reset}
+  ${c.dim}Standard Technical Governance // Optional Naval (--theme=naval) or Private Local Theme (--theme=local)${c.reset}
 `);
 }
 
+/**
+ * @param {readline.Interface} rl
+ * @param {string} query
+ * @returns {Promise<string>}
+ */
 function promptUser(rl, query) {
   return new Promise((resolve) => rl.question(query, resolve));
 }
@@ -98,6 +104,12 @@ export async function runCLI(args = []) {
     case 'advisor':
       await handleAdvise(args.slice(1));
       break;
+    case 'spec':
+      await handleSpec(args.slice(1));
+      break;
+    case 'theme':
+      handleTheme(args.slice(1));
+      break;
     case 'help':
     case '--help':
     case '-h':
@@ -107,8 +119,16 @@ export async function runCLI(args = []) {
   }
 }
 
+/** @param {string[]} [args] */
+function handleTheme(args = []) {
+  const targetDir = args.find(a => !a.startsWith('-')) || process.cwd();
+  const active = resolveTheme(args, { rootDir: targetDir });
+  printCrewThemeNotice(active, { rootDir: targetDir });
+}
+
 /**
- * Handler for `iss inspect [dir] [--json]`
+ * Handler for `iss inspect [dir] [--json]`.
+ * @param {string[]} args
  */
 async function handleInspect(args) {
   const isJson = args.includes('--json');
@@ -150,25 +170,36 @@ async function handleInspect(args) {
 }
 
 /**
- * Handler for `iss init [dir] [--yes]`
+ * Handler for `iss init [dir] [--yes]`.
+ * @param {string[]} args
  */
 async function handleInit(args) {
   const autoYes = args.includes('--yes') || args.includes('-y');
   const isDryRun = args.includes('--dry-run');
+  const isForce = args.includes('--force') || args.includes('--reconfigure');
+  const initSpecFlag = args.includes('--init-spec');
   const theme = resolveTheme(args);
   const targetDir = args.find(a => !a.startsWith('-')) || process.cwd();
   const dir = path.resolve(targetDir);
 
   printBanner();
   if (isDryRun) {
-    console.log(`${c.yellow}${c.bold}🔍 [DRY RUN MODE ACTIVE]: Simulating governance deployment without touching disk.${c.reset}`);
+    console.log(`${getHookLabel('sim')} ${c.yellow}${c.bold}[DRY RUN MODE ACTIVE]: Simulating governance deployment in ${getZoneName('simBay', { rootDir: dir })} without touching disk.${c.reset}`);
   }
   console.log(`${c.bold}⚙️  INITIALIZING MULTI-AGENT GOVERNANCE AT:${c.reset} ${c.cyan}${dir}${c.reset} (Theme: ${theme})\n`);
 
   const profile = detectProject(dir);
+  const detectedTech = Object.entries(profile.techStack || {})
+    .filter(([, v]) => Boolean(v))
+    .map(([k]) => k.replace(/^has/, ''))
+    .join(', ');
+  console.log(`${c.dim}Detected: ${profile.archetype} | Stack: ${detectedTech || 'Clean/Greenfield'} | Styling: ${profile.stylingStrategy || 'AUTO'}${c.reset}`);
+
   const questions = getTailoredQuestions(profile);
+  /** @type {import('../types/index.d.ts').AdvisorAnswers} */
   const answers = {
     archetype: profile.archetype,
+    summary: profile.summary,
     techStack: profile.techStack,
     stylingStrategy: profile.stylingStrategy
   };
@@ -181,15 +212,37 @@ async function handleInit(args) {
   try {
     if (autoYes) {
       console.log(`${c.yellow}[AUTOMATED MODE]: Adopting defaults for ${profile.archetype}...${c.reset}`);
+      answers.project_domain = profile.archetype === 'DATA_PIPELINE_RAG' ? 'Datos / Scraping / IA / Pipeline RAG' : 'General Software';
+      answers.project_summary = profile.summary || 'Modular application';
+      answers.domain_invariants = 'KISS simplicity, explicit recoverable failure handling, minimal dependencies';
+      answers.project_non_goals = 'Avoid speculative abstractions outside core scope';
       answers.architecture_pattern = 'Hexagonal / Modular Clean';
       answers.file_distribution = profile.techStack?.hasTurbo ? 'Monorepo Packages' : 'Modular Standard';
       answers.styling_strategy = profile.stylingStrategy;
-      answers.coding_styles = profile.techStack?.hasBiome ? 'Biome' : 'ESLint + Prettier + Strict TS';
+      answers.coding_styles = profile.techStack?.hasPython
+        ? 'Ruff + Black + MyPy'
+        : profile.techStack?.hasGo
+          ? 'Golangci-lint + Go Fmt'
+          : profile.techStack?.hasRust
+            ? 'Cargo Clippy + Cargo Fmt'
+            : profile.techStack?.hasBiome
+              ? 'Biome'
+              : 'ESLint + Prettier + Strict TS';
       answers.shield_rigidity = 'Standard';
-      answers.crew_flavor = theme === 'starfleet' ? 'Starfleet (Opcional)' : 'Estándar (Funcional)';
+      answers.crew_flavor = theme === 'local'
+        ? 'Local Privado'
+        : theme === 'naval'
+          ? 'Naval (Opcional, Dominio Público)'
+          : 'Estándar (Funcional)';
     } else {
       for (const q of questions) {
         console.log(`\n${c.bold}${q.title}${c.reset}`);
+        if (q.type === 'text') {
+          const textInput = await promptUser(rl, `${c.yellow}[Enter = ${q.defaultValue}]: ${c.reset}`);
+          answers[q.id] = textInput.trim() || q.defaultValue;
+          continue;
+        }
+
         q.options.forEach((opt, idx) => {
           console.log(`  ${c.cyan}[${idx + 1}]${c.reset} ${opt}`);
         });
@@ -209,7 +262,6 @@ async function handleInit(args) {
             answers[q.id] = selectedText;
           }
         } else if (choice.trim()) {
-          // User typed direct custom text instead of number
           const investigation = investigateCustomChoice(q.id, choice.trim());
           console.log(`${c.green}⚡ [INVESTIGACIÓN AUTÓNOMA]:${c.reset} ${investigation.recommendation}`);
           answers[q.id] = `CUSTOM: ${choice.trim()}`;
@@ -220,12 +272,18 @@ async function handleInit(args) {
       }
     }
 
-    const effectiveTheme = /starfleet/i.test(answers.crew_flavor || '') ? 'starfleet' : theme;
+    const shouldCreateSpec = initSpecFlag || (!autoYes && profile.archetype === 'GREENFIELD_EMPTY');
+    const flavorAnswer = answers.crew_flavor || '';
+    const effectiveTheme = /local|privado/i.test(flavorAnswer)
+      ? 'local'
+      : /naval|marit/i.test(flavorAnswer)
+        ? 'naval'
+        : theme;
 
     // Step 2: Fleet Allocation
     console.log(`\n${c.bold}DETERMINING MODEL FLEET & CONTEXT BUDGETS...${c.reset}`);
     const fleetProfile = detectAvailableFleet();
-    let fleetAlloc = allocateCrewToFleet(fleetProfile.detectedProviders);
+    const fleetAlloc = allocateCrewToFleet(fleetProfile.detectedProviders);
     console.log(`  Allocated ${c.green}${Object.keys(fleetAlloc.officerRoster).length} roles${c.reset} across available fleet models.`);
 
     // Step 3: MCP Triad Confirmation
@@ -233,10 +291,16 @@ async function handleInit(args) {
 
     // Step 4: Generate Artifacts
     console.log(`\n${c.bold}EMITTING DETERMINISTIC AGENT DIRECTIVES...${c.reset}`);
-    const createdFiles = generateGovernanceArchitecture(dir, answers, fleetAlloc, mcpTriad, { dryRun: isDryRun, theme: effectiveTheme });
+    const createdFiles = generateGovernanceArchitecture(dir, answers, fleetAlloc, mcpTriad, {
+      dryRun: isDryRun,
+      theme: effectiveTheme,
+      force: isForce,
+      interviewCompleted: !autoYes,
+      createInitialSpec: shouldCreateSpec
+    });
 
     if (isDryRun) {
-      console.log(`\n${c.yellow}${c.bold}[DRY RUN RESULTS]: 0 files written to disk.${c.reset}`);
+      console.log(`\n${getHookLabel('sim')} ${c.yellow}${c.bold}[DRY RUN RESULTS — ${getZoneName('simBay', { rootDir: dir })}]: 0 files written to disk.${c.reset}`);
       console.log(`${c.silver}The following ${createdFiles.length} files would be created/modified:${c.reset}`);
       createdFiles.forEach(f => console.log(`  ${c.cyan}[DRY-RUN WOULD CREATE]${c.reset} ${f}`));
       console.log(`\nTo physically apply these changes, re-run without --dry-run.\n`);
@@ -248,7 +312,7 @@ async function handleInit(args) {
     createdFiles.slice(0, 10).forEach(f => console.log(`  ${c.dim}+${c.reset} ${f}`));
     if (createdFiles.length > 10) console.log(`  ${c.dim}... and ${createdFiles.length - 10} more.${c.reset}`);
 
-    printCrewThemeNotice(effectiveTheme);
+    printCrewThemeNotice(effectiveTheme, { rootDir: dir });
     return createdFiles;
   } finally {
     rl.close();
@@ -256,19 +320,23 @@ async function handleInit(args) {
 }
 
 /**
- * Handler for `iss apply [dir] [--dry-run] [--theme=standard|starfleet]` (alias: `engage`, `arm`)
+ * Handler for `iss apply [dir] [--dry-run] [--theme=standard|naval|local]` (alias: `engage`, `arm`).
+ * @param {string[]} args
  */
 async function handleEngage(args) {
   const targetDir = args.find(a => !a.startsWith('-')) || process.cwd();
   const passArgs = ['--yes', targetDir];
-  if (args.includes('--dry-run')) passArgs.push('--dry-run');
+  for (const flag of ['--dry-run', '--force', '--reconfigure', '--init-spec']) {
+    if (args.includes(flag)) passArgs.push(flag);
+  }
   const themeFlag = args.find(a => a.startsWith('--theme='));
   if (themeFlag) passArgs.push(themeFlag);
   await handleInit(passArgs);
 }
 
 /**
- * Handler for `iss doctor [dir]` / `iss audit [dir]`
+ * Handler for `iss doctor [dir]` / `iss audit [dir]`.
+ * @param {string[]} args
  */
 async function handleDoctor(args) {
   const targetDir = args.find(a => !a.startsWith('-')) || process.cwd();
@@ -281,12 +349,13 @@ async function handleDoctor(args) {
 }
 
 /**
- * Handler for `iss new <name> [dir]`
+ * Handler for `iss new <name> [dir]`.
+ * @param {string[]} args
  */
 async function handleNew(args) {
   const projectName = args[0];
   if (!projectName) {
-    console.error(`${c.red}Error: Project name required. Example: iss new my-space-app${c.reset}`);
+    console.error(`${c.red}Error: Project name required. Example: iss new my-app${c.reset}`);
     process.exit(1);
   }
 
@@ -294,7 +363,7 @@ async function handleNew(args) {
   const targetDir = path.resolve(baseDir, projectName);
 
   printBanner();
-  console.log(`${c.bold}🏗️  FORGING NEW GREENFIELD VESSEL:${c.reset} ${c.gold}${projectName}${c.reset}`);
+  console.log(`${c.bold}🏗️  SCAFFOLDING NEW GREENFIELD PROJECT:${c.reset} ${c.gold}${projectName}${c.reset}`);
   console.log(`${c.dim}Target Directory: ${targetDir}${c.reset}\n`);
 
   const rl = readline.createInterface({
@@ -303,7 +372,7 @@ async function handleNew(args) {
   });
 
   try {
-    console.log(`${c.bold}Elige la plantilla estelar para el nuevo proyecto:${c.reset}`);
+    console.log(`${c.bold}Elige la plantilla de arquitectura para el nuevo proyecto:${c.reset}`);
     const templates = [
       { id: 'monorepo', label: 'Fullstack Monorepo (Next.js + NestJS + Expo + Turborepo)' },
       { id: 'astro-portal', label: 'Content Portal & SSG (Astro + Biome + Mixed CSS/Tailwind)' },
@@ -317,16 +386,20 @@ async function handleNew(args) {
     const choice = await promptUser(rl, `\n${c.yellow}Selecciona plantilla [1-${templates.length}]: ${c.reset}`);
     const idx = parseInt(choice.trim(), 10) - 1;
     let selectedTemplate = (idx >= 0 && idx < templates.length) ? templates[idx].id : 'monorepo';
+    let customStack = null;
 
     if (selectedTemplate === 'custom') {
       const customName = await promptUser(rl, `${c.magenta}Describe la arquitectura/stack deseado: ${c.reset}`);
       const inv = investigateCustomChoice('stack', customName);
       console.log(`${c.green}⚡ [INVESTIGACIÓN AUTÓNOMA]:${c.reset} ${inv.recommendation}`);
-      selectedTemplate = 'minimal';
+      customStack = customName;
+      selectedTemplate = customName;
     }
 
+    const projectSummary = await promptUser(rl, `${c.yellow}Describe brevemente el propósito/dominio del proyecto [Enter = omitir]: ${c.reset}`);
+
     console.log(`\n${c.bold}🚀 Scaffolding physical project tree...${c.reset}`);
-    const scaffoldedFiles = scaffoldGreenfield(targetDir, { archetype: selectedTemplate, projectName });
+    const scaffoldedFiles = scaffoldGreenfield(targetDir, { archetype: selectedTemplate, purpose: selectedTemplate, projectName });
     console.log(`Scaffolded ${c.green}${scaffoldedFiles.length} files.${c.reset}`);
 
     // Now run governance generator on the new directory
@@ -338,18 +411,24 @@ async function handleNew(args) {
     generateGovernanceArchitecture(targetDir, {
       archetype: profile.archetype,
       techStack: profile.techStack,
-      stylingStrategy: profile.stylingStrategy || 'MIXED_CSS_TAILWIND'
-    }, fleetAlloc, mcpTriad);
+      stylingStrategy: profile.stylingStrategy || 'MIXED_CSS_TAILWIND',
+      project_purpose: customStack || selectedTemplate,
+      project_summary: projectSummary.trim() || profile.summary
+    }, fleetAlloc, mcpTriad, {
+      interviewCompleted: Boolean(projectSummary.trim()),
+      createInitialSpec: true
+    });
 
     console.log(`\n${c.green}${c.bold}✅ New project '${projectName}' ready at:${c.reset} ${targetDir}`);
-    console.log(`\nTo embark:\n  ${c.cyan}cd ${path.relative(process.cwd(), targetDir) || projectName}${c.reset}\n`);
+    console.log(`\nNext steps:\n  ${c.cyan}cd ${path.relative(process.cwd(), targetDir) || projectName}${c.reset}\n`);
   } finally {
     rl.close();
   }
 }
 
 /**
- * Handler for `iss skills [compact|create|list]`
+ * Handler for `iss skills [compact|create|list]`.
+ * @param {string[]} args
  */
 async function handleSkills(args) {
   const sub = args[0] || 'list';
@@ -363,7 +442,8 @@ async function handleSkills(args) {
     skills.forEach(s => console.log(`  - ${c.green}${s}${c.reset}`));
   } else if (sub === 'compact') {
     const isDryRun = args.includes('--dry-run');
-    console.log(`${c.bold}Compacting and fusing skills in ${c.cyan}${targetDir}${c.reset}${isDryRun ? ' [DRY RUN]' : ''}...`);
+    const prefix = isDryRun ? `${getHookLabel('sim')} ` : '';
+    console.log(`${prefix}${c.bold}Compacting and fusing skills in ${c.cyan}${targetDir}${c.reset}${isDryRun ? ` [${getZoneName('simBay', { rootDir: targetDir })} / DRY RUN]` : ''}...`);
     const fused = compactAndFuseSkills(targetDir, { dryRun: isDryRun, writeToDisk: !isDryRun });
     console.log(`${c.green}Compacted into ${fused.length} canonical pillars:${c.reset}`);
     fused.forEach(f => console.log(`  - ${c.gold}${f.canonicalName}${c.reset} (${f.sourceSkills.length} source skills fused)`));
@@ -382,7 +462,8 @@ async function handleSkills(args) {
 }
 
 /**
- * Handler for `iss mcps [dir|warmup]`
+ * Handler for `iss mcps [dir|warmup]`.
+ * @param {string[]} args
  */
 async function handleMcps(args) {
   if (args[0] === 'warmup') {
@@ -394,14 +475,15 @@ async function handleMcps(args) {
     if (fs.existsSync(warmupScript)) {
       console.log(`Executing warmup script: ${c.dim}${warmupScript}${c.reset}`);
       try {
-        execSync(`bash "${warmupScript}"`, { stdio: 'inherit', cwd: target });
+        execFileSync('bash', [warmupScript], { stdio: 'inherit', cwd: target });
       } catch (err) {
-        console.warn(`Warmup completed with exit code notice: ${err.message}`);
+        const msg = err instanceof Error ? err.message : String(err);
+        console.warn(`Warmup completed with exit code notice: ${msg}`);
       }
     } else {
       console.log(`📡 Warming up codebase-memory-mcp indexer on ${target}...`);
       try {
-        execSync(`npx codebase-memory-mcp index .`, { stdio: 'inherit', cwd: target });
+        execFileSync('npx', ['codebase-memory-mcp', 'index', '.'], { stdio: 'inherit', cwd: target });
       } catch {
         console.log(`ℹ️  codebase-memory-mcp will index automatically on first agent request.`);
       }
@@ -435,22 +517,101 @@ async function handleMcps(args) {
 }
 
 /**
- * Handler for `iss update`
+ * Handler for `iss update`.
+ * @param {string[]} args
  */
 async function handleUpdate(args) {
   const checkOnly = args.includes('--check');
   const autoYes = args.includes('--yes') || args.includes('-y');
+  const srcArg = args.find(a => a.startsWith('--source='));
+  const source = srcArg ? srcArg.slice('--source='.length) : undefined;
   const targetDir = args.find(a => !a.startsWith('-')) || process.cwd();
-  await runFrameworkUpdate(targetDir, { checkOnly, yes: autoYes });
+  const res = await runFrameworkUpdate(targetDir, { checkOnly, yes: autoYes, source });
+  if (res && (res.aborted || res.success === false)) {
+    process.exitCode = 1;
+  }
 }
 
 /**
- * Handler for `iss advise`
+ * Handler for `iss advise`.
+ * @param {string[]} args
  */
 async function handleAdvise(args) {
   const autoYes = args.includes('--yes') || args.includes('-y');
   const targetDir = args.find(a => !a.startsWith('-')) || process.cwd();
   await runLifecycleAdvisor(targetDir, { yes: autoYes });
+}
+
+/**
+ * Handler for `iss spec [new <slug>|check]`.
+ * @param {string[]} args
+ */
+async function handleSpec(args) {
+  const sub = args[0] || 'check';
+
+  if (sub === 'new') {
+    const rest = args.slice(1);
+    const positional = rest.filter(a => !a.startsWith('-'));
+    const slug = positional[0];
+    const targetDir = positional[1] || process.cwd();
+    const isDryRun = rest.includes('--dry-run');
+    const force = rest.includes('--force');
+    const titleArg = rest.find(a => a.startsWith('--title='));
+    const title = titleArg ? titleArg.slice('--title='.length) : undefined;
+
+    if (!slug) {
+      console.error(`${c.red}Error: Spec slug required. Example: iss spec new auth-flow${c.reset}`);
+      process.exitCode = 1;
+      return;
+    }
+
+    try {
+      const created = createSpecTemplate(targetDir, slug, { dryRun: isDryRun, force, title });
+      if (isDryRun) {
+        console.log(`${getHookLabel('sim')} ${c.yellow}[DRY-RUN — ${getZoneName('simBay', { rootDir: targetDir })}] Would create spec:${c.reset} ${created.relPath}`);
+      } else {
+        console.log(`${c.green}Created SDD spec:${c.reset} ${created.relPath}`);
+        console.log(`${c.dim}Next: Run stateless Zero-Context Cold Review (Lower-Deck Evaluator) before setting status: APPROVED, then verify with 'iss spec check'.${c.reset}`);
+      }
+      return created;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`${c.red}Error: ${msg}${c.reset}`);
+      process.exitCode = 1;
+      return null;
+    }
+  }
+
+  if (sub === 'check' || sub === 'drift') {
+    const rest = args.slice(1);
+    const isJson = rest.includes('--json');
+    const targetDir = rest.find(a => !a.startsWith('-')) || process.cwd();
+    const report = auditSpecDrift(targetDir);
+
+    if (isJson) {
+      console.log(JSON.stringify(report, null, 2));
+    } else {
+      console.log(`\n${c.bold}${c.gold}📐 SDD SPECIFICATION DRIFT CHECK${c.reset}`);
+      console.log(`${c.dim}Target: ${path.resolve(targetDir)}${c.reset}`);
+      console.log('----------------------------------------------------');
+      if (report.specsFound === 0) {
+        console.log(`  \x1b[32m✔ [OK]\x1b[0m No SDD specs found under docs/designs/.`);
+      } else {
+        for (const msg of report.passed) console.log(`  \x1b[32m✔ [OK]\x1b[0m ${msg}`);
+        for (const msg of report.warnings) console.log(`  \x1b[33m▲ [WARN]\x1b[0m ${msg}`);
+        for (const msg of report.failures) console.log(`  \x1b[31m✖ [FAIL]\x1b[0m ${msg}`);
+      }
+      console.log('----------------------------------------------------\n');
+    }
+
+    if (!report.ok && !rest.includes('--no-exit')) {
+      process.exitCode = 1;
+    }
+    return report;
+  }
+
+  console.error(`${c.red}Unknown spec subcommand '${sub}'. Use 'iss spec new <slug>' or 'iss spec check'.${c.reset}`);
+  process.exitCode = 1;
 }
 
 /**
@@ -466,24 +627,30 @@ ${c.bold}COMMANDS:${c.reset}
   ${c.green}apply${c.reset} [dir]             One-shot deployment: arms hooks, roles, MCPs & Git guards (alias: engage)
   ${c.green}doctor${c.reset} [dir]            Audit governance drift, executable guards, and policy alignment
   ${c.green}inspect${c.reset} [dir]           Inspect existing project, detect archetype & recommendations
-  ${c.green}init${c.reset} [dir] [--yes]      Launch interactive wizard to scaffold multi-agent governance
+  ${c.green}init${c.reset} [dir] [--yes]      Launch interactive context interview & governance generator
   ${c.green}new${c.reset} <name> [dir]        Scaffold a brand new project from scratch (Greenfield)
+  ${c.green}theme${c.reset} [dir]             Inspect active theme mode (standard / naval / local), zones & roles
   ${c.green}skills${c.reset} list|compact|create Manage, compact & fuse agent skills
   ${c.green}mcps${c.reset} [dir|warmup]       Configure or warm up the Indispensable MCP Triad
   ${c.green}advise${c.reset} [dir] [--yes]    Lifecycle-aware advisor (Greenfield / Active / Maintenance)
+  ${c.green}spec${c.reset} new|check [dir]    Create SDD specs or audit spec-to-code drift
   ${c.green}update${c.reset} [dir] [--check]  Consulted framework updater with Quadruple Security Gate
   ${c.green}help${c.reset}                    Display this CLI reference
 
 ${c.bold}OPTIONS:${c.reset}
   ${c.cyan}--yes, -y${c.reset}               Non-interactive mode, auto-accept optimal recommendations
-  ${c.cyan}--theme=standard|starfleet${c.reset} Use standard technical names (default) or optional Starfleet aliases
+  ${c.cyan}--theme=standard|naval|local${c.reset} Standard technical names, public Naval (Bridge/Lower Deck/Sim), or untracked local override
   ${c.cyan}--check${c.reset}                 Check for upstream updates without applying
   ${c.cyan}--dry-run${c.reset}               Simulate governance deployment without writing to disk
-  ${c.cyan}--json${c.reset}                  Output structured JSON (available in inspect)
+  ${c.cyan}--force, --reconfigure${c.reset}  Re-run context interview and overwrite existing contracts/instincts
+  ${c.cyan}--init-spec${c.reset}             Generate initial SDD spec in docs/designs/001-initial-architecture.md
+  ${c.cyan}--json${c.reset}                  Output structured JSON (available in inspect / spec check)
 
 ${c.bold}EXAMPLES:${c.reset}
   $ iss apply
-  $ iss apply --theme=starfleet
+  $ iss apply --theme=naval
+  $ iss apply --theme=local --dry-run
+  $ iss theme
   $ iss doctor
   $ iss advise
   $ iss inspect /path/to/my-expo-app

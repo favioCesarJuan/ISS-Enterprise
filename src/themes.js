@@ -1,107 +1,61 @@
 /**
  * ==============================================================================
- * THEME & ROLE ALIAS REGISTRY (Option A: Standard Default + Optional Starfleet)
+ * THEME & ROLE ALIAS REGISTRY (Standard, Public-Domain Naval & Private Local)
  * ==============================================================================
- * Provides functional corporate role definitions by default ("standard") and
- * optional Star Trek: TNG crew aliases ("starfleet") with zero extra output tokens.
+ * Delegates theme resolution to `.agents/hooks/theme-loader.js` so runtime
+ * hook labels, zones (Bridge, Lower Deck, Sim Deck/Sandbox), and optional
+ * private local themes work consistently with zero external dependencies.
  * ==============================================================================
  */
 
-export const ROLES_MAP = [
-  {
-    key: 'productOwner',
-    standardRole: 'Human / Product Owner',
-    starfleetAlias: 'Captain Jean-Luc Picard',
-    responsibility: 'Project authority, final sign-off, requirements & constraints'
-  },
-  {
-    key: 'orchestrator',
-    standardRole: 'Lead AI Orchestrator',
-    starfleetAlias: 'Cmdr. William T. Riker',
-    responsibility: 'Task decomposition, checklist planning, subagent coordination'
-  },
-  {
-    key: 'systemsAnalyst',
-    standardRole: 'Systems & Logic Analyst',
-    starfleetAlias: 'Lt. Cmdr. Data',
-    responsibility: 'Algorithms, DDD domain logic, finite state machines, workspace DAG'
-  },
-  {
-    key: 'architect',
-    standardRole: 'Architecture Lead',
-    starfleetAlias: 'Lt. Cmdr. Geordi La Forge',
-    responsibility: 'Monorepo boundaries, modular architecture, build & CI pipelines'
-  },
-  {
-    key: 'security',
-    standardRole: 'Security Guardrail',
-    starfleetAlias: 'Lt. Cmdr. Worf / Lt. Tasha Yar',
-    responsibility: 'Pre-tool shell/path guard, Semgrep SAST, skill security scanning'
-  },
-  {
-    key: 'quality',
-    standardRole: 'Quality & Health Auditor',
-    starfleetAlias: 'Dr. Beverly Crusher',
-    responsibility: 'Post-edit policy checks, YAGNI minimalism, anti-polling rules'
-  },
-  {
-    key: 'ux',
-    standardRole: 'Design System & UX Enforcer',
-    starfleetAlias: 'Counselor Deanna Troi',
-    responsibility: 'CLI ergonomics, WCAG accessibility, styling policy, bilingual docs'
-  },
-  {
-    key: 'testRunner',
-    standardRole: 'Test Automation Runner',
-    starfleetAlias: 'Ensign Wesley Crusher',
-    responsibility: 'Fast unit tests, linters, subagent execution'
-  },
-  {
-    key: 'metaCritic',
-    standardRole: 'Meta-Critic Evaluator',
-    starfleetAlias: 'Q',
-    responsibility: 'Adversarial edge-case review, bias detection, doc-to-code parity'
-  }
-];
+import {
+  ROLES_CATALOG,
+  resolveThemeMode,
+  loadThemeConfig,
+  getHookLabel,
+  getZoneName,
+  getRoleAlias
+} from '../.agents/hooks/theme-loader.js';
+
+export const ROLES_MAP = ROLES_CATALOG;
+
+export { loadThemeConfig, getHookLabel, getZoneName, getRoleAlias };
 
 /**
  * Resolves the active theme from CLI flags, explicit options, or environment.
- * @param {string[]} args
- * @param {object} options
- * @returns {'standard' | 'starfleet'}
+ * @param {string[]} [args]
+ * @param {import('../types/index.d.ts').ThemeOptions} [options]
+ * @returns {import('../types/index.d.ts').ThemeMode}
  */
 export function resolveTheme(args = [], options = {}) {
-  if (options.theme === 'starfleet' || options.theme === 'standard') {
-    return options.theme;
-  }
-  const flag = args.find(a => a.startsWith('--theme='));
-  if (flag) {
-    const value = flag.split('=')[1]?.trim().toLowerCase();
-    if (value === 'starfleet' || value === 'standard') {
-      return value;
-    }
-  }
-  if (process.env.AGENT_THEME === 'starfleet') {
-    return 'starfleet';
-  }
-  return 'standard';
+  return resolveThemeMode(args, options);
 }
 
 /**
- * Prints the installation/activation notice explaining the optional Starfleet crew theme,
- * each character's role in the project, and the zero-extra-token guarantee.
- * @param {'standard' | 'starfleet'} theme
+ * Prints the active governance theme notice, deck zones, and role mappings.
+ * @param {import('../types/index.d.ts').ThemeMode | string} [theme]
+ * @param {import('../types/index.d.ts').ThemeOptions} [options]
  */
-export function printCrewThemeNotice(theme = 'standard') {
+export function printThemeNotice(theme = 'standard', options = {}) {
+  const cfg = loadThemeConfig({ ...options, theme });
+  const modeLabel = cfg.mode === 'naval'
+    ? 'Public-Domain Naval Aliases Active'
+    : cfg.mode === 'local'
+      ? `Private Local Theme Active (${cfg.source})`
+      : 'Default Functional Naming';
+
   console.log('\n================================================================');
-  console.log(`GOVERNANCE THEME: ${theme.toUpperCase()} (${theme === 'starfleet' ? 'Optional Starfleet Aliases Active' : 'Default Functional Naming'})`);
+  console.log(`GOVERNANCE THEME: ${cfg.mode.toUpperCase()} (${modeLabel})`);
+  console.log(`ZONES: Bridge="${cfg.zones.bridge}" | Lower Deck="${cfg.zones.lowerDeck}" | Sim="${cfg.zones.simBay}"`);
   console.log('================================================================');
-  console.log('You can switch between standard technical roles and optional Starfleet crew');
-  console.log('aliases at any time via `--theme=starfleet` or `AGENT_THEME=starfleet` in .agents/.env.');
+  console.log('Switch themes anytime via `--theme=standard|naval|local` or `AGENT_THEME` in .agents/.env.');
   console.log('Token Impact: 0 extra output tokens when using compact labels (`Zero Theatrical Filler`).\n');
-  console.log('Role <-> Crew Mapping:');
-  for (const r of ROLES_MAP) {
-    console.log(`  - ${r.standardRole.padEnd(28)} <-> ${r.starfleetAlias.padEnd(28)} : ${r.responsibility}`);
+  console.log('Role <-> Active Alias Mapping:');
+  for (const role of ROLES_MAP) {
+    const alias = getRoleAlias(role.key, { ...options, theme: cfg.mode });
+    console.log(`  - ${role.standardRole.padEnd(28)} <-> ${alias.padEnd(24)} [${role.deck}] : ${role.responsibility}`);
   }
   console.log('================================================================\n');
 }
+
+export const printCrewThemeNotice = printThemeNotice;

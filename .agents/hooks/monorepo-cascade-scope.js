@@ -11,8 +11,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { getHookLabel } from './theme-loader.js';
 
-const scopeLabel = () => (process.env.AGENT_THEME === 'starfleet' ? '[DATA / CASCADE SCOPE]' : '[CASCADE SCOPE]');
+const scopeLabel = () => getHookLabel('cascade');
+const simLabel = () => getHookLabel('sim');
 
 export const TOPOLOGY_RULES = [
   {
@@ -42,13 +44,22 @@ export const TOPOLOGY_RULES = [
 ];
 
 /**
+ * @typedef {{
+ *   dirToName: Map<string, string>,
+ *   nameToDir: Map<string, string>,
+ *   dependentsOf: Map<string, Set<string>>
+ * }} WorkspaceTopology
+ */
+
+/**
  * Discovers monorepo package directories and builds a dependency DAG.
- * @param {string} rootDir
- * @returns {object|null} { dirToName, nameToDir, dependentsOf } or null if not a monorepo
+ * @param {string} [rootDir]
+ * @returns {WorkspaceTopology|null}
  */
 export function discoverWorkspaceTopology(rootDir = process.cwd()) {
   const root = path.resolve(rootDir);
   const candidateRoots = ['apps', 'packages', 'libs', 'services', 'modules'];
+  /** @type {Array<{ relPath: string, fullPath: string, pkgJsonPath: string }>} */
   const pkgDirs = [];
 
   for (const cand of candidateRoots) {
@@ -73,8 +84,11 @@ export function discoverWorkspaceTopology(rootDir = process.cwd()) {
     return null;
   }
 
+  /** @type {Map<string, string>} */
   const dirToName = new Map();
+  /** @type {Map<string, string>} */
   const nameToDir = new Map();
+  /** @type {Map<string, string[]>} */
   const pkgDeps = new Map();
 
   for (const item of pkgDirs) {
@@ -93,12 +107,17 @@ export function discoverWorkspaceTopology(rootDir = process.cwd()) {
     } catch {}
   }
 
+  /** @type {Map<string, Set<string>>} */
   const dependentsOf = new Map();
   for (const [pkgName, deps] of pkgDeps.entries()) {
     for (const dep of deps) {
       if (nameToDir.has(dep)) {
-        if (!dependentsOf.has(dep)) dependentsOf.set(dep, new Set());
-        dependentsOf.get(dep).add(pkgName);
+        let set = dependentsOf.get(dep);
+        if (!set) {
+          set = new Set();
+          dependentsOf.set(dep, set);
+        }
+        set.add(pkgName);
       }
     }
   }
@@ -108,11 +127,12 @@ export function discoverWorkspaceTopology(rootDir = process.cwd()) {
 
 /**
  * Calculates downstream affected projects based on changed file paths.
- * @param {string[]} changedFiles
- * @param {string} rootDir
+ * @param {string[]} [changedFiles]
+ * @param {string} [rootDir]
  * @returns {string[]} List of affected packages/apps
  */
 export function calculateAffectedNodes(changedFiles = [], rootDir = process.cwd()) {
+  /** @type {Set<string>} */
   const affected = new Set();
   const topology = discoverWorkspaceTopology(rootDir);
 
@@ -139,6 +159,7 @@ export function calculateAffectedNodes(changedFiles = [], rootDir = process.cwd(
 
         while (queue.length > 0) {
           const current = queue.shift();
+          if (!current) continue;
           const dependents = topology.dependentsOf.get(current) || [];
           for (const depName of dependents) {
             if (!visited.has(depName)) {
@@ -171,7 +192,7 @@ export function calculateAffectedNodes(changedFiles = [], rootDir = process.cwd(
 
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
   if (process.argv.includes('--test')) {
-    console.log(`${scopeLabel()}: Running monorepo cascade scope self-test...`);
+    console.log(`${simLabel()} ${scopeLabel()}: Running monorepo cascade scope self-test...`);
 
     const sampleChanges = [
       'packages/shared-types/src/workday.ts',

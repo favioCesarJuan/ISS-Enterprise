@@ -20,12 +20,13 @@ import path from 'node:path';
 import os from 'node:os';
 import readline from 'node:readline';
 import process from 'node:process';
-import { execSync, spawnSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { evaluateSecurity } from '../.agents/hooks/pre-tool-shell-guard.js';
 import { validateSkillSafety } from './skill-engine.js';
 
 const UPSTREAM_REPO = 'https://github.com/favioCesarJuan/ISS-Enterprise.git';
 
+/** @param {string} query @returns {Promise<string>} */
 function promptUser(query) {
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   return new Promise(resolve => rl.question(query, ans => {
@@ -34,31 +35,35 @@ function promptUser(query) {
   }));
 }
 
+/** @param {string} targetDir @returns {string} */
 export function getInstalledVersion(targetDir) {
   const lockFile = path.join(targetDir, '.agents/framework-lock.json');
   if (fs.existsSync(lockFile)) {
     try {
       const lock = JSON.parse(fs.readFileSync(lockFile, 'utf-8'));
       return lock.version || '1.0.0';
-    } catch {}
+    } catch { /* fallback: invalid framework-lock.json */ }
   }
   const pkgFile = path.join(targetDir, 'package.json');
   if (fs.existsSync(pkgFile)) {
     try {
       const pkg = JSON.parse(fs.readFileSync(pkgFile, 'utf-8'));
       if (pkg.name === 'iss-enterprise') return pkg.version || '1.0.0';
-    } catch {}
+    } catch { /* fallback: invalid package.json */ }
   }
   return '1.0.0';
 }
 
 /**
- * Runs the Quadruple Security Gate on a quarantined directory
+ * Runs the Quadruple Security Gate on a quarantined directory.
+ * @param {string} quarantinedDir
+ * @returns {Promise<{ passed: boolean, gateResults: Array<{ gate: string, passed: boolean, details: string }> }>}
  */
 export async function runQuadrupleSecurityGate(quarantinedDir) {
+  /** @type {Array<{ gate: string, passed: boolean, details: string }>} */
   const gateResults = [];
 
-  // Gate 1: Tasha Yar Security Shield
+  // Gate 1: Pre-Tool Shell & Path Guard
   let gate1Passed = true;
   let gate1Details = 'All executable command patterns and file paths nominal.';
   try {
@@ -66,23 +71,32 @@ export async function runQuadrupleSecurityGate(quarantinedDir) {
     for (const f of files) {
       const rel = f.toString();
       const full = path.join(quarantinedDir, rel);
-      // Skip self-test fixtures and test suites that intentionally contain attack patterns
-      if (rel.startsWith('test/') || rel.startsWith('examples/') || rel.endsWith('pre-tool-shell-guard.js')) continue;
+      // Skip dependencies, VCS, self-test fixtures, and test suites that intentionally contain attack patterns
+      if (
+        rel.startsWith('node_modules/') ||
+        rel.startsWith('.git/') ||
+        rel.startsWith('test/') ||
+        rel.startsWith('examples/') ||
+        rel.endsWith('pre-tool-shell-guard.js')
+      ) continue;
       if (fs.existsSync(full) && fs.statSync(full).isFile() && (full.endsWith('.js') || full.endsWith('.sh'))) {
         const content = fs.readFileSync(full, 'utf-8');
-        const verdict = evaluateSecurity({ tool: 'run_command', args: { CommandLine: content } });
+        const scanContent = full.endsWith('.sh')
+          ? content.split(/\r?\n/).filter(l => !l.trim().startsWith('#')).join('\n')
+          : content;
+        const verdict = evaluateSecurity({ tool: 'run_command', args: { CommandLine: scanContent } });
         if (!verdict.allowed) {
           gate1Passed = false;
-          gate1Details = verdict.reason;
+          gate1Details = verdict.reason || 'Blocked by pre-tool security guard.';
           break;
         }
       }
     }
   } catch (err) {
     gate1Passed = false;
-    gate1Details = err.message;
+    gate1Details = err instanceof Error ? err.message : String(err);
   }
-  gateResults.push({ gate: 'Tasha Yar Tactical Shield (Commands & Paths)', passed: gate1Passed, details: gate1Details });
+  gateResults.push({ gate: 'Pre-Tool Shell & Path Guard (Commands & Paths)', passed: gate1Passed, details: gate1Details });
 
   // Gate 2: Semgrep AST Static Analysis
   let gate2Passed = true;
@@ -144,6 +158,9 @@ export async function runQuadrupleSecurityGate(quarantinedDir) {
 
 /**
  * Runs consulted framework update on target project.
+ * @param {string} [targetDir]
+ * @param {import('../types/index.d.ts').UpdaterOptions} [options]
+ * @returns {Promise<import('../types/index.d.ts').UpdaterResult>}
  */
 export async function runFrameworkUpdate(targetDir = process.cwd(), options = {}) {
   const root = path.resolve(targetDir);
@@ -156,11 +173,20 @@ export async function runFrameworkUpdate(targetDir = process.cwd(), options = {}
   const source = options.source || UPSTREAM_REPO;
 
   try {
-    console.log(`🛰️  [COMMANDER RIKER]: Scanning upstream repository for tactical updates...`);
+    console.log(`[LEAD ORCHESTRATOR]: Scanning upstream repository for updates...`);
     if (fs.existsSync(source) && fs.statSync(source).isDirectory()) {
-      fs.cpSync(source, quarantineDir, { recursive: true });
+      fs.cpSync(source, quarantineDir, {
+        recursive: true,
+        filter: (srcPath) => {
+          const base = path.basename(srcPath);
+          return base !== 'node_modules' && base !== '.git' && !base.startsWith('.agents.backup.');
+        }
+      });
     } else {
-      execSync(`git clone --depth 1 "${source}" "${quarantineDir}" >/dev/null 2>&1`);
+      if (typeof source !== 'string' || source.startsWith('-') || !/^(https?:\/\/|ssh:\/\/|git@)[^\s]+$/.test(source)) {
+        throw new Error(`Invalid upstream repository source: "${String(source)}"`);
+      }
+      execFileSync('git', ['clone', '--depth', '1', '--', source, quarantineDir], { stdio: 'ignore' });
     }
 
     const upstreamPkg = JSON.parse(fs.readFileSync(path.join(quarantineDir, 'package.json'), 'utf-8'));
@@ -185,12 +211,12 @@ export async function runFrameworkUpdate(targetDir = process.cwd(), options = {}
     }
 
     if (!proceedDownload) {
-      console.log(`\n🛑 [OPERACIÓN CANCELADA]: Actualización descartada por orden del Capitán. Tu proyecto no fue modificado.\n`);
+      console.log(`\n🛑 [OPERACIÓN CANCELADA]: Actualización descartada por el usuario. Tu proyecto no fue modificado.\n`);
       return { aborted: true };
     }
 
     // Step 2: Quadruple Security Gate
-    console.log(`\n🛡️  [TASHA YAR]: Desplegando Aduana Cuádruple de Seguridad sobre la actualización...`);
+    console.log(`\n🛡️  [SECURITY GUARDRAIL]: Ejecutando Aduana Cuádruple de Seguridad sobre la actualización...`);
     const securityEvaluation = await runQuadrupleSecurityGate(quarantineDir);
 
     for (const g of securityEvaluation.gateResults) {
@@ -263,8 +289,8 @@ export async function runFrameworkUpdate(targetDir = process.cwd(), options = {}
     // Step 5: Post-update verification
     console.log(`Verifying post-update hook integrity...`);
     try {
-      execSync(`node "${path.join(localAgents, 'hooks/pre-tool-shell-guard.js')}" --test`, { stdio: 'ignore' });
-      execSync(`node "${path.join(localAgents, 'hooks/post-edit-policy-check.js')}" --test`, { stdio: 'ignore' });
+      execFileSync(process.execPath, [path.join(localAgents, 'hooks/pre-tool-shell-guard.js'), '--test'], { stdio: 'ignore' });
+      execFileSync(process.execPath, [path.join(localAgents, 'hooks/post-edit-policy-check.js'), '--test'], { stdio: 'ignore' });
       console.log(`\n\x1b[32m\x1b[1m[ISS-ENTERPRISE]: Framework updated to v${upstreamVersion}.\x1b[0m\n`);
       return { success: true, version: upstreamVersion, backupDir };
     } catch (testErr) {
@@ -274,7 +300,8 @@ export async function runFrameworkUpdate(targetDir = process.cwd(), options = {}
         fs.cpSync(backupDir, localAgents, { recursive: true });
         console.log(`🛡️  Rollback completado con éxito. Estado restaurado desde backup.`);
       }
-      return { success: false, rollback: true, error: testErr.message };
+      const errMsg = testErr instanceof Error ? testErr.message : String(testErr);
+      return { success: false, rollback: true, error: errMsg };
     }
 
   } finally {

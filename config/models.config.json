@@ -1,18 +1,22 @@
 {
   "dominantProvider": "gemini",
   "availableModels": [
-    "gemini-3.1-pro",
-    "gemini-3.8-flash"
+    "gemini-2.5-pro",
+    "gemini-2.5-flash"
   ],
   "officerRoster": {
-    "Captain (User)": {
+    "Human / Product Owner": {
       "nature": "HUMAN",
-      "model": "The Captain (Human User)",
+      "navalAlias": "Captain",
+      "deck": "BRIDGE",
+      "model": "Human User",
       "role": "Strategic direction, requirements, executive sign-off"
     },
-    "William T. Riker (First Officer)": {
+    "Lead AI Orchestrator": {
       "nature": "AI_AGENT",
-      "model": "gemini-3.1-pro",
+      "navalAlias": "First Officer",
+      "deck": "BRIDGE",
+      "model": "gemini-2.5-pro",
       "contextBudget": {
         "maxTokens": 1000000,
         "isConstrained": false,
@@ -22,9 +26,11 @@
       },
       "purpose": "Lead AI orchestrator, task planning, subagent dispatch"
     },
-    "Lt. Cmdr. Data (Systems & Logic)": {
+    "Systems & Logic Analyst": {
       "nature": "AI_AGENT",
-      "model": "gemini-3.1-pro",
+      "navalAlias": "Science & Logic Officer",
+      "deck": "BRIDGE",
+      "model": "gemini-2.5-pro",
       "contextBudget": {
         "maxTokens": 1000000,
         "isConstrained": false,
@@ -32,11 +38,13 @@
         "chunkLimitLines": 250,
         "quarantineInSubagent": false
       },
-      "purpose": "Formal logic, DDD, RAG pipelines, mathematical algorithms"
+      "purpose": "Formal logic, DDD, workspace DAG, mathematical algorithms"
     },
-    "Lt. Cmdr. Geordi La Forge (Engineering)": {
+    "Architecture Lead": {
       "nature": "AI_AGENT",
-      "model": "gemini-3.1-pro",
+      "navalAlias": "Chief Engineer",
+      "deck": "BRIDGE",
+      "model": "gemini-2.5-pro",
       "contextBudget": {
         "maxTokens": 1000000,
         "isConstrained": false,
@@ -44,12 +52,14 @@
         "chunkLimitLines": 250,
         "quarantineInSubagent": false
       },
-      "purpose": "Architecture lead, monorepo boundaries, Docker, mentorship"
+      "purpose": "Architecture lead, module boundaries, CI/build pipelines"
     },
-    "Lt. Tasha Yar (Security Guardrail)": {
+    "Security Guardrail": {
       "nature": "AI_AGENT",
-      "model": "gemini-3.1-pro",
-      "fallbackModel": "gemini-3.8-flash",
+      "navalAlias": "Security Officer",
+      "deck": "BRIDGE",
+      "model": "gemini-2.5-pro",
+      "fallbackModel": "gemini-2.5-flash",
       "contextBudget": {
         "maxTokens": 1000000,
         "isConstrained": false,
@@ -57,12 +67,14 @@
         "chunkLimitLines": 250,
         "quarantineInSubagent": false
       },
-      "purpose": "Tactical security shields, input sanitization, Semgrep, defensive perimeter"
+      "purpose": "Pre-tool shell/path guard, Semgrep SAST, skill security scanning"
     },
-    "Lt. Worf (Offensive Security & Red Team)": {
+    "Design System & UX Enforcer": {
       "nature": "AI_AGENT",
-      "model": "gemini-3.1-pro",
-      "fallbackModel": "gemini-3.8-flash",
+      "navalAlias": "UX & Comms Officer",
+      "deck": "BRIDGE",
+      "model": "gemini-2.5-pro",
+      "fallbackModel": "gemini-2.5-flash",
       "contextBudget": {
         "maxTokens": 1000000,
         "isConstrained": false,
@@ -70,12 +82,14 @@
         "chunkLimitLines": 250,
         "quarantineInSubagent": false
       },
-      "purpose": "Adversarial red teaming (Strix), penetration testing, supply chain audits, away-team incursions"
+      "purpose": "Design system, CLI ergonomics, styling governance, WCAG AAA"
     },
-    "Counselor Deanna Troi (Design & UX)": {
+    "Quality & Health Auditor": {
       "nature": "AI_AGENT",
-      "model": "gemini-3.1-pro",
-      "fallbackModel": "gemini-3.8-flash",
+      "navalAlias": "Chief Medical Officer",
+      "deck": "BRIDGE",
+      "model": "gemini-2.5-pro",
+      "fallbackModel": "gemini-2.5-flash",
       "contextBudget": {
         "maxTokens": 1000000,
         "isConstrained": false,
@@ -83,12 +97,13 @@
         "chunkLimitLines": 250,
         "quarantineInSubagent": false
       },
-      "purpose": "Design system, ergonomics, styling governance, WCAG AAA"
+      "purpose": "Post-edit policy check, KISS/YAGNI/DRY/SOLID minimalism, anti-polling rules"
     },
-    "Dr. Beverly Crusher (Health & Quality)": {
+    "Test Automation Runner": {
       "nature": "AI_AGENT",
-      "model": "gemini-3.1-pro",
-      "fallbackModel": "gemini-3.8-flash",
+      "navalAlias": "Lower-Deck Runner",
+      "deck": "LOWER_DECK",
+      "model": "gemini-2.5-flash",
       "contextBudget": {
         "maxTokens": 1000000,
         "isConstrained": false,
@@ -96,23 +111,15 @@
         "chunkLimitLines": 250,
         "quarantineInSubagent": false
       },
-      "purpose": "Code health, Ponytail minimalism, compiler diagnostics"
+      "purpose": "Stateless script execution, simulation & test runners (node --test/Vitest/Pytest)"
     },
-    "Ensign Wesley Crusher (Automation Runner)": {
-      "nature": "AI_AGENT",
-      "model": "gemini-3.8-flash",
-      "contextBudget": {
-        "maxTokens": 1000000,
-        "isConstrained": false,
-        "systemPromptBudget": 4000,
-        "chunkLimitLines": 250,
-        "quarantineInSubagent": false
-      },
-      "purpose": "Fast script execution, test runners (Vitest/Pytest/Playwright)"
-    },
-    "Q (The Q Continuum)": {
+    "Meta-Critic Evaluator": {
       "nature": "META_AGENT",
-      "model": "gemini-3.1-pro",
+      "navalAlias": "Lower-Deck Evaluator",
+      "deck": "LOWER_DECK",
+      "model": "gemini-2.5-pro",
+      "paraphraseModel": "gemini-2.5-flash",
+      "isolationMode": "ZERO_CONTEXT_READ_ONLY",
       "contextBudget": {
         "maxTokens": 1000000,
         "isConstrained": false,
@@ -120,7 +127,7 @@
         "chunkLimitLines": 250,
         "quarantineInSubagent": false
       },
-      "purpose": "Omniscient meta-critic, timeline audits, bias challenge"
+      "purpose": "Stateless zero-context cold review (3-gate Pass/Abort), bias detection, doc-to-code parity"
     }
   },
   "budgetingDirectives": {
@@ -130,7 +137,7 @@
       "enabled": true,
       "reasoningCore": "en",
       "ioLanguage": "auto_detect_mirror",
-      "tokenSavingsEstimate": "30-50%"
+      "zeroTheatricalFiller": true
     }
   }
 }

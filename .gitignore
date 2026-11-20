@@ -18,6 +18,9 @@ scratch/
 .circuit-test-*
 .agents/.circuit_state.json
 .agents.backup.*
+.agents/.env
+.agents/theme.local.json
+.agent-theme.local.json
 .agents/audit_log.json
 .agents/audit_log.md
 *.tmp
