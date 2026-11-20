@@ -18,7 +18,7 @@ jobs:
         node-version: [18, 20, 22]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
@@ -56,7 +56,7 @@ jobs:
     name: TypeScript Static Type Check (JSDoc + checkJs)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: pnpm/action-setup@v4
 
@@ -76,7 +76,7 @@ jobs:
     name: Semgrep SAST Scan
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Run Semgrep with .semgrep.yml
         uses: returntocorp/semgrep-action@v1
