@@ -11,6 +11,7 @@
  * ==============================================================================
  */
 
+/** @type {Record<string, import('../types/index.d.ts').McpCatalogEntry>} */
 export const INDISPENSABLE_TRIAD = {
   docs_freshness: {
     id: 'context7',
@@ -40,12 +41,14 @@ export const INDISPENSABLE_TRIAD = {
 
 /**
  * Evaluates current project and model profile, returning recommended MCP config.
- * @param {object} techStack
- * @param {string} dominantProvider 'anthropic' | 'google' | 'deepseek' | 'qwen'
- * @returns {object} Structured MCP configuration and checklist
+ * @param {Partial<import('../types/index.d.ts').TechStackFlags>} [techStack]
+ * @param {string} [dominantProvider] 'anthropic' | 'google' | 'deepseek' | 'qwen'
+ * @returns {import('../types/index.d.ts').McpPlan} Structured MCP configuration and checklist
  */
 export function buildMcpPlan(techStack = {}, dominantProvider = 'anthropic') {
+  /** @type {Record<string, import('../types/index.d.ts').McpServerDefinition>} */
   const servers = {};
+  /** @type {import('../types/index.d.ts').McpPlan} */
   const plan = {
     triad: INDISPENSABLE_TRIAD,
     recommendedConfig: { mcpServers: servers },
@@ -104,7 +107,8 @@ export function buildMcpPlan(techStack = {}, dominantProvider = 'anthropic') {
 
 /**
  * High-level helper to configure the indispensable triad.
- * @param {object} options
+ * @param {{ preferredModel?: string, techStack?: Partial<import('../types/index.d.ts').TechStackFlags> }} [options]
+ * @returns {import('../types/index.d.ts').McpPlan}
  */
 export function configureIndispensableTriad(options = {}) {
   const preferredModel = options.preferredModel || 'anthropic';
@@ -114,20 +118,56 @@ export function configureIndispensableTriad(options = {}) {
 
 /**
  * Evaluates custom user substitutions for the MCP triad.
- * @param {object} substitutions
- * @param {object} techStack
+ * Supports overriding by triad slot (docs_freshness, knowledge_graph, vcs_github)
+ * or by default server name (context7, codebase-memory-mcp, github).
+ * @param {Record<string, string>} [substitutions]
+ * @param {Partial<import('../types/index.d.ts').TechStackFlags>} [techStack]
+ * @param {string} [dominantProvider]
+ * @returns {import('../types/index.d.ts').McpPlan}
  */
-export function evaluateTriadSubstitutions(substitutions = {}, techStack = {}) {
-  return buildMcpPlan(techStack, 'anthropic');
+export function evaluateTriadSubstitutions(substitutions = {}, techStack = {}, dominantProvider = 'anthropic') {
+  const plan = buildMcpPlan(techStack, dominantProvider);
+  const servers = plan.recommendedConfig.mcpServers;
+
+  /** @type {Record<string, string>} */
+  const slotToDefault = {
+    docs_freshness: 'context7',
+    knowledge_graph: 'codebase-memory-mcp',
+    vcs_github: servers['github-cli-fallback'] ? 'github-cli-fallback' : 'github'
+  };
+
+  for (const [key, replacement] of Object.entries(substitutions || {})) {
+    if (!replacement || typeof replacement !== 'string') continue;
+    const targetKey = slotToDefault[key] || key;
+    if (servers[targetKey]) {
+      delete servers[targetKey];
+      if (replacement === 'gh-cli-skill') {
+        servers['github-cli-fallback'] = {
+          type: 'NATIVE_CLI_SKILL',
+          tool: 'gh',
+          description: 'Lightweight local gh CLI fallback.'
+        };
+      } else {
+        servers[replacement] = {
+          command: 'npx',
+          args: ['-y', replacement],
+          priority: 'RECOMMENDED',
+          description: `Substituted alternative for ${targetKey}.`
+        };
+      }
+    }
+  }
+
+  return plan;
 }
 
 /**
  * Formats a user-facing interactive summary of the proposed MCPs.
- * @param {object} mcpPlan
+ * @param {import('../types/index.d.ts').McpPlan} mcpPlan
  * @returns {string} Formatted text
  */
 export function renderInteractiveMcpMenu(mcpPlan) {
-  let output = `📡 [FIRST OFFICER RIKER]: Tactical Sensor Array (Indispensable MCP Triad):\n\n`;
+  let output = `[LEAD ORCHESTRATOR]: Sensor Array (Indispensable MCP Triad):\n\n`;
 
   for (const [key, item] of Object.entries(mcpPlan.triad)) {
     output += `  🔹 [${item.name}]: ${item.defaultServer}\n`;

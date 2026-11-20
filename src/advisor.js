@@ -14,7 +14,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import readline from 'node:readline';
 import process from 'node:process';
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 
 export const PROJECT_LIFECYCLE = {
   GREENFIELD: 'greenfield',
@@ -22,6 +22,7 @@ export const PROJECT_LIFECYCLE = {
   MAINTENANCE: 'maintenance'
 };
 
+/** @param {string} query @returns {Promise<string>} */
 function promptUser(query) {
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   return new Promise(resolve => rl.question(query, ans => {
@@ -31,6 +32,7 @@ function promptUser(query) {
 }
 
 // Heuristic knowledge database for autonomous investigation of custom technologies
+/** @type {Record<string, Record<string, string>>} */
 const TECH_KNOWLEDGE_BASE = {
   bun: {
     runtime: 'Bun',
@@ -96,14 +98,132 @@ const TECH_KNOWLEDGE_BASE = {
     framework: 'Astro',
     recommendedArch: 'Islands Architecture & Atomic Design',
     fileLayout: 'src/components/atoms, src/components/molecules, src/components/organisms, src/layouts, src/pages, src/styles'
+  },
+  python: {
+    language: 'Python',
+    linter: 'Ruff + Black',
+    typecheck: 'mypy --strict',
+    testRunner: 'pytest',
+    recommendedArch: 'Modular Domain or Data Pipeline',
+    fileLayout: 'src/, tests/'
+  },
+  django: {
+    framework: 'Django',
+    language: 'Python',
+    linter: 'Ruff + MyPy',
+    testRunner: 'pytest',
+    recommendedArch: 'Modular Apps with Service Layer',
+    fileLayout: 'apps/, config/, tests/'
+  },
+  flask: {
+    framework: 'Flask',
+    language: 'Python',
+    linter: 'Ruff + Black',
+    testRunner: 'pytest',
+    recommendedArch: 'Blueprints + Clean Services',
+    fileLayout: 'app/routes, app/services, app/models, tests/'
+  },
+  typescript: {
+    language: 'TypeScript',
+    linter: 'Biome or ESLint + tsc',
+    testRunner: 'pnpm test',
+    recommendedArch: 'Modular Clean Architecture',
+    fileLayout: 'src/, test/'
+  },
+  node: {
+    runtime: 'Node.js',
+    linter: 'Biome or ESLint',
+    testRunner: 'node --test',
+    recommendedArch: 'Zero-Dependency Modular CLI/Service',
+    fileLayout: 'bin/, src/, test/'
   }
 };
 
 /**
+ * Normalizes shield rigidity labels to 'standard' | 'strict' | 'fast-track'.
+ * @param {string} [value]
+ * @returns {import('../types/index.d.ts').RigidityLevel}
+ */
+export function resolveRigidityLevel(value = '') {
+  const v = String(value || '').toLowerCase();
+  if (/strict|estricto|parano/i.test(v)) return 'strict';
+  if (/fast.?track|agil|ágil/i.test(v)) return 'fast-track';
+  return 'standard';
+}
+
+/**
+ * Infers language and verification commands (test, lint, build) from detected stack and interview answers.
+ * @param {Partial<import('../types/index.d.ts').AdvisorAnswers> | Partial<import('../types/index.d.ts').ProjectProfile>} [profile]
+ * @param {Partial<import('../types/index.d.ts').AdvisorAnswers> | Partial<import('../types/index.d.ts').ProjectProfile>} [answers]
+ * @returns {import('../types/index.d.ts').VerificationCommands}
+ */
+export function inferVerificationCommands(profile = {}, answers = {}) {
+  /** @type {Partial<import('../types/index.d.ts').TechStackFlags>} */
+  const stack = profile.techStack || answers.techStack || {};
+  const profileAny = /** @type {Partial<import('../types/index.d.ts').AdvisorAnswers>} */ (profile);
+  const answersAny = /** @type {Partial<import('../types/index.d.ts').AdvisorAnswers>} */ (answers);
+  const coding = String(answersAny.coding_styles || profileAny.coding_styles || '');
+  const purpose = String(answersAny.project_purpose || profileAny.project_purpose || profileAny.summary || '');
+  const invConfigs = Object.entries(answers)
+    .filter(([k, v]) => k.endsWith('_investigation') && Boolean(v && typeof v === 'object' && 'config' in v))
+    .map(([, v]) => JSON.stringify(/** @type {{ config: unknown }} */ (v).config))
+    .join(' ');
+  const combined = `${coding} ${purpose} ${invConfigs}`;
+
+  if (stack.hasPython || stack.hasFastApi || stack.hasDjango || stack.hasFlask || /\b(python|ruff|mypy|pytest|fastapi|django|flask)\b/i.test(combined)) {
+    return {
+      language: 'python',
+      testCommand: 'pytest',
+      lintCommand: 'ruff check .',
+      buildCommand: 'python -m compileall .'
+    };
+  }
+  if (stack.hasGo || /\b(golang|golangci-lint|go\s+fmt|go\s+test|go\s+mod)\b/i.test(combined) || /\bgo\b/i.test(purpose)) {
+    return {
+      language: 'go',
+      testCommand: 'go test ./...',
+      lintCommand: 'golangci-lint run',
+      buildCommand: 'go build ./...'
+    };
+  }
+  if (stack.hasRust || /\b(rust|cargo|clippy)\b/i.test(combined)) {
+    return {
+      language: 'rust',
+      testCommand: 'cargo test',
+      lintCommand: 'cargo clippy -- -D warnings',
+      buildCommand: 'cargo build'
+    };
+  }
+  if (stack.hasFlutter || /\b(flutter|dart)\b/i.test(combined)) {
+    return {
+      language: 'dart',
+      testCommand: 'flutter test',
+      lintCommand: 'dart analyze',
+      buildCommand: 'flutter build'
+    };
+  }
+  if (/\b(bun|elysia)\b/i.test(combined)) {
+    return {
+      language: 'javascript',
+      testCommand: 'bun test',
+      lintCommand: 'npx biome check .',
+      buildCommand: 'bun run build'
+    };
+  }
+
+  return {
+    language: 'javascript',
+    testCommand: 'pnpm test',
+    lintCommand: (stack.hasBiome || /biome/i.test(coding)) ? 'npx biome check .' : 'pnpm run lint',
+    buildCommand: 'pnpm run build'
+  };
+}
+
+/**
  * Investigates an "Otra" / custom input dynamically.
  * @param {string} category 'stack' | 'arch' | 'styling' | 'linter' | 'file_distribution'
- * @param {string} userInput
- * @returns {object} Inferred recommendations and configurations
+ * @param {string} [userInput]
+ * @returns {import('../types/index.d.ts').CustomInvestigation} Inferred recommendations and configurations
  */
 export function investigateCustomChoice(category, userInput = '') {
   const query = userInput.toLowerCase().trim();
@@ -137,14 +257,16 @@ export function investigateCustomChoice(category, userInput = '') {
 /**
  * Returns the interactive questions tailored to the detected archetype and stack.
  * Dynamically prioritizes the optimal folder structure recommendation.
- * @param {object} detectedProfile
- * @returns {Array<object>} List of structured questions
+ * @param {Partial<import('../types/index.d.ts').ProjectProfile>} [detectedProfile]
+ * @returns {import('../types/index.d.ts').AdvisorQuestion[]} List of structured questions
  */
-export function getTailoredQuestions(detectedProfile) {
+export function getTailoredQuestions(detectedProfile = {}) {
   const isGreenfield = detectedProfile.archetype === 'GREENFIELD_EMPTY';
+  /** @type {Partial<import('../types/index.d.ts').TechStackFlags>} */
   const stack = detectedProfile.techStack || {};
-  const hasFrontend = stack.hasNext || stack.hasAstro || stack.hasExpo;
+  const hasFrontend = stack.hasNext || stack.hasAstro || stack.hasExpo || stack.hasVite;
 
+  /** @type {import('../types/index.d.ts').AdvisorQuestion[]} */
   const questions = [];
 
   // Question 0: Project Lifecycle Stage
@@ -163,11 +285,54 @@ export function getTailoredQuestions(detectedProfile) {
     ]
   });
 
+  // Context & Domain Discovery Questions (Block 1)
+  questions.push({
+    id: 'project_summary',
+    type: 'text',
+    title: '📝 Describe en 1-2 frases el propósito del proyecto y su usuario objetivo:',
+    defaultValue: detectedProfile.summary || 'Aplicación modular enfocada en simplicidad y mantenibilidad'
+  });
+
+  questions.push({
+    id: 'project_domain',
+    title: '🧭 ¿A qué dominio o vertical pertenece el proyecto?',
+    options: [
+      'SaaS / Aplicación Web Corporativa',
+      'Fintech / Pagos / Precisión Financiera (Invariantes estrictos)',
+      'Salud / Datos Sensibles / Privacidad (PII/Compliance)',
+      'E-commerce / Catálogo y Pedidos',
+      'Portal de Contenidos / Blog / Marketing',
+      'Herramienta CLI / Librería / DevTool',
+      'Datos / Scraping / IA / Pipeline RAG',
+      '[Otra / Personalizada]'
+    ]
+  });
+
+  questions.push({
+    id: 'domain_invariants',
+    title: '⚖️ ¿Cuál es la regla o invariante crítica que nunca debe romperse?',
+    options: [
+      'Simplicidad KISS, cero dependencias innecesarias y fallas explícitas [Recomendado]',
+      'Precisión numérica/financiera, idempotencia y auditoría inmutable',
+      'Privacidad de datos (PII), validación estricta y cero secretos en logs',
+      'Operación Offline-First con cola de sincronización resiliente',
+      'Alto rendimiento / baja latencia y cobertura de pruebas estricta',
+      '[Otra / Personalizada]'
+    ]
+  });
+
+  questions.push({
+    id: 'project_non_goals',
+    type: 'text',
+    title: '🚫 ¿Qué queda explícitamente FUERA de alcance en esta etapa (Non-Goals)?',
+    defaultValue: 'Evitar abstracciones prematuras y features fuera del flujo principal'
+  });
+
   // Question 1: Greenfield purpose OR Adoption confirmation
   if (isGreenfield) {
     questions.push({
       id: 'project_purpose',
-      title: '🛸 ¿Qué tipo de nave espacial deseas forjar desde cero?',
+      title: '🏗️ ¿Qué tipo de proyecto deseas crear desde cero?',
       options: [
         'SaaS Fullstack (Monorepo con Web + Mobile + API)',
         'Portal de Contenidos / Blog / SSG con Atomic Design (Astro)',
@@ -196,6 +361,7 @@ export function getTailoredQuestions(detectedProfile) {
   });
 
   // Question 3: Directory layout / File distribution (Intelligently ordered by stack!)
+  /** @type {string[]} */
   const distributionOptions = [];
 
   if (stack.hasAstro) {
@@ -288,39 +454,52 @@ export function getTailoredQuestions(detectedProfile) {
     });
   }
 
-  // Question 5: Linters, Formatters & Type Safety
+  // Question 5: Linters, Formatters & Type Safety (ordered by detected stack)
+  const linterPool = [
+    'Biome (Linter + Formatter ultra-rápido todo-en-uno)',
+    'ESLint + Prettier + TypeScript Strict',
+    'Ruff + Black + MyPy (Python moderno de alto rendimiento)',
+    'Golangci-lint + Go Fmt (Go)',
+    'Cargo Clippy + Cargo Fmt (Rust)'
+  ];
+  let preferredLinterIdx = 0;
+  if (stack.hasPython || stack.hasFastApi || stack.hasDjango || stack.hasFlask) preferredLinterIdx = 2;
+  else if (stack.hasGo) preferredLinterIdx = 3;
+  else if (stack.hasRust) preferredLinterIdx = 4;
+  else if (!stack.hasBiome && stack.hasPackageJson) preferredLinterIdx = 1;
+
+  const orderedLinters = [
+    linterPool[preferredLinterIdx],
+    ...linterPool.filter((_, idx) => idx !== preferredLinterIdx),
+    '[Otra / Personalizada]'
+  ];
+
   questions.push({
     id: 'coding_styles',
     title: '📏 ¿Qué herramientas de linter, formato y calidad gobernarán el código?',
-    options: [
-      'Biome (Linter + Formatter ultra-rápido todo-en-uno)',
-      'ESLint + Prettier + TypeScript Strict',
-      'Ruff + Black + MyPy (Python moderno de alto rendimiento)',
-      'Golangci-lint + Go Fmt (Go)',
-      'Cargo Clippy + Cargo Fmt (Rust)',
-      '[Otra / Personalizada]'
-    ]
+    options: orderedLinters
   });
 
-  // Question 6: Shields rigidity (Tasha Yar Security)
+  // Question 6: Guardrail rigidity
   questions.push({
     id: 'shield_rigidity',
-    title: '🛡️ ¿Qué nivel de rigidez de escudos tácticos (Tasha Yar) deseas activar?',
+    title: '🛡️ ¿Qué nivel de rigidez de seguridad deseas activar?',
     options: [
-      'Standard Starfleet (Moderado): Bloquea comandos destructivos y audita tipos/linters [Recomendado]',
-      'Red Alert (Paranoico): Intercepta comandos, bloquea installs sin auditor de Tasha Yar, escudos reforzados',
-      'Warp Speed (Ágil): Modo advertencia informativo sin bloqueos físicos',
+      'Standard (Moderado): Bloquea comandos destructivos y audita tipos/linters [Recomendado]',
+      'Strict (Paranoico): Intercepta comandos, protege git force-push/reset y bloquea installs sin auditoría',
+      'Fast-Track (Ágil): Modo advertencia informativo sin bloqueos físicos',
       '[Otra / Personalizada]'
     ]
   });
 
-  // Question 7: Role Identity / Theme (Option A)
+  // Question 7: Role Identity / Theme
   questions.push({
     id: 'crew_flavor',
     title: '🎭 ¿Qué tema de nomenclatura deseas para los roles de gobernanza?',
     options: [
       'Estándar (Funcional): Nombres técnicos claros (LeadOrchestrator, SecurityGuardrail) [Recomendado]',
-      'Starfleet (Opcional): Alias de Star Trek TNG (Picard, Riker, Data, Worf, Crusher) — 0 tokens extra',
+      'Naval (Opcional, Dominio Público): Roles marítimos (Bridge, Lower Deck, Sim Deck) — 0 tokens extra',
+      'Local Privado: Carga alias y zona de simulación desde .agent-theme.local.json (fuera de Git)',
       '[Otra / Personalizada]'
     ]
   });
@@ -329,10 +508,13 @@ export function getTailoredQuestions(detectedProfile) {
 }
 
 /**
- * Heuristically inspects a target directory to determine project maturity and lifecycle
+ * Heuristically inspects a target directory to determine project maturity and lifecycle.
+ * @param {string} [targetDir]
+ * @returns {import('../types/index.d.ts').LifecycleDetection}
  */
 export function detectProjectLifecycle(targetDir = process.cwd()) {
   const resolved = path.resolve(targetDir);
+  /** @param {string} rel */
   const exists = (rel) => fs.existsSync(path.join(resolved, rel));
 
   const hasPkg = exists('package.json');
@@ -341,14 +523,15 @@ export function detectProjectLifecycle(targetDir = process.cwd()) {
   let commitCount = 0;
   if (hasGit) {
     try {
-      commitCount = parseInt(execSync('git rev-list --count HEAD 2>/dev/null', { cwd: resolved, encoding: 'utf-8' }).trim(), 10) || 0;
-    } catch {}
+      commitCount = parseInt(execFileSync('git', ['rev-list', '--count', 'HEAD'], { cwd: resolved, encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] }).trim(), 10) || 0;
+    } catch { /* fallback: repo without commits yet */ }
   }
 
+  /** @type {string[]} */
   let rootFiles = [];
   try {
     rootFiles = fs.readdirSync(resolved).filter(f => !f.startsWith('.git') && f !== 'node_modules');
-  } catch {}
+  } catch { /* fallback: unreadable target directory */ }
 
   let inferredStage = PROJECT_LIFECYCLE.IN_CONSTRUCTION;
   if (rootFiles.length <= 3 && commitCount <= 2) {
@@ -381,9 +564,13 @@ export function detectProjectLifecycle(targetDir = process.cwd()) {
 }
 
 /**
- * Generates actionable gap recommendations based on lifecycle stage
+ * Generates actionable gap recommendations based on lifecycle stage.
+ * @param {string} stage
+ * @param {Partial<import('../types/index.d.ts').LifecycleGaps>} gaps
+ * @returns {import('../types/index.d.ts').LifecycleRecommendation[]}
  */
 export function generateRecommendations(stage, gaps) {
+  /** @type {import('../types/index.d.ts').LifecycleRecommendation[]} */
   const recommendations = [];
 
   if (stage === PROJECT_LIFECYCLE.GREENFIELD) {
@@ -405,7 +592,7 @@ export function generateRecommendations(stage, gaps) {
   } else if (stage === PROJECT_LIFECYCLE.IN_CONSTRUCTION) {
     recommendations.push({
       category: 'Escudos de Desarrollo',
-      title: 'Activar Escudo Perimetral de Tasha Yar (`iss engage`)',
+      title: 'Activar Escudo Perimetral de Seguridad (`iss apply`)',
       details: 'Despliega hooks de pre-commit y circuit breaker para proteger el código en construcción activa.'
     });
     if (!gaps.hasMcp) {
@@ -445,12 +632,15 @@ export function generateRecommendations(stage, gaps) {
 }
 
 /**
- * Runs interactive or automatic lifecycle advisor
+ * Runs interactive or automatic lifecycle advisor.
+ * @param {string} [targetDir]
+ * @param {{ yes?: boolean }} [options]
+ * @returns {Promise<import('../types/index.d.ts').LifecycleProfile>}
  */
 export async function runLifecycleAdvisor(targetDir = process.cwd(), options = {}) {
   const resolved = path.resolve(targetDir);
   console.log(`\n\x1b[38;5;220m==============================================================================\x1b[0m`);
-  console.log(`\x1b[1m⚔️ ISS-ENTERPRISE: ASESOR TÁCTICO DE CICLO DE VIDA (TASHA YAR & CONSEJO)\x1b[0m`);
+  console.log(`\x1b[1mISS-ENTERPRISE: ASESOR DE CICLO DE VIDA Y DIAGNÓSTICO DE BRECHAS\x1b[0m`);
   console.log(`\x1b[38;5;220m==============================================================================\x1b[0m\n`);
 
   const detection = detectProjectLifecycle(resolved);

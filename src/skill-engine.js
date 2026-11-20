@@ -13,6 +13,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { getHookLabel } from '../.agents/hooks/theme-loader.js';
 
 export const CANONICAL_DOMAINS = [
   'security-guardrails',
@@ -28,7 +29,7 @@ export const CANONICAL_DOMAINS = [
 /**
  * Recommends a lean, compact skill suite tailored to the project archetype.
  * @param {string} archetype ARCHETYPES.*
- * @param {object} techStack
+ * @param {Partial<import('../types/index.d.ts').TechStackFlags>} [techStack]
  * @returns {string[]} List of recommended canonical skills
  */
 export function recommendSkillsForArchetype(archetype, techStack = {}) {
@@ -99,7 +100,8 @@ ${description || `Specialized operational instructions for ${name}.`}
  * Physically creates a new skill directory and SKILL.md in targetDir.
  * @param {string} targetDir
  * @param {string} name
- * @param {object} options
+ * @param {{ description?: string, officer?: string }} [options]
+ * @returns {{ name: string, path: string }}
  */
 export function createNewSkill(targetDir, name, options = {}) {
   const skill = createCustomSkill(name, options.description, options.officer);
@@ -126,7 +128,7 @@ export function validateSkillSafety(content = '') {
   ];
   for (const p of dangerous) {
     if (p.test(content)) {
-      return { safe: false, reason: `🚨 [TASHA YAR]: Malicious prompt pattern detected: ${p.source}` };
+      return { safe: false, reason: `🚨 ${getHookLabel('guard')}: Malicious prompt pattern detected: ${p.source}` };
     }
   }
   return { safe: true };
@@ -135,10 +137,12 @@ export function validateSkillSafety(content = '') {
 /**
  * Compacts and fuses multiple raw skills into the canonical domain set.
  * Detects duplicates, collisions, and merges them into clean pillars.
- * @param {string|Array<{ name: string, content: string }>} inputDirOrList
- * @returns {Array<{ canonicalName: string, domain: string, sourceSkills: string[], fusedContent: string }>}
+ * @param {string|Array<import('../types/index.d.ts').SkillFrontmatter>} [inputDirOrList]
+ * @param {{ targetDir?: string, writeToDisk?: boolean, dryRun?: boolean }} [options]
+ * @returns {import('../types/index.d.ts').CompactedSkillPillar[]}
  */
 export function compactAndFuseSkills(inputDirOrList = [], options = {}) {
+  /** @type {import('../types/index.d.ts').SkillFrontmatter[]} */
   let rawSkills = [];
 
   if (typeof inputDirOrList === 'string') {
@@ -166,6 +170,7 @@ export function compactAndFuseSkills(inputDirOrList = [], options = {}) {
     rawSkills = inputDirOrList;
   }
 
+  /** @type {Record<string, import('../types/index.d.ts').SkillFrontmatter[]>} */
   const domains = {};
 
   for (const skill of rawSkills) {
@@ -182,6 +187,7 @@ export function compactAndFuseSkills(inputDirOrList = [], options = {}) {
     domains[domain].push(skill);
   }
 
+  /** @type {import('../types/index.d.ts').CompactedSkillPillar[]} */
   const compacted = [];
   for (const [domain, list] of Object.entries(domains)) {
     const fusedDirectives = list.map(s => `### Sub-domain: ${s.name}\n${(s.content || '').replace(/^---[\s\S]*?---/, '').trim()}`).join('\n\n---\n\n');
@@ -225,8 +231,8 @@ function classifySkillToDomain(name = '', content = '') {
   if (/design|ui|ux|css|tailwind|style|apple|typography|color|contrast|a11y/i.test(text)) {
     return 'design-system-and-ui';
   }
-  if (/health|ponytail|minimal|clean|solid|refactor|debt|smell/i.test(text)) {
-    return 'code-health-and-ponytail';
+  if (/health|ponytail|minimal|clean|solid|dry|kiss|yagni|refactor|debt|smell/i.test(text)) {
+    return 'code-health-and-minimalism';
   }
   if (/rag|vector|python|pipeline|scraper|pandas|data|etl|ingest/i.test(text)) {
     return 'data-engineering-and-rag';
@@ -237,8 +243,8 @@ function classifySkillToDomain(name = '', content = '') {
   if (/lifecycle|governance|drift|contract|manifest|charter|vetting/i.test(text)) {
     return 'skill-governance-lifecycle';
   }
-  if (/critic|q-continuum|timeline|chaos|evaluator|bias/i.test(text)) {
-    return 'meta-critic-q';
+  if (/critic|q-continuum|timeline|chaos|evaluator|bias|goldfish|cold-review|adversarial/i.test(text)) {
+    return 'adversarial-meta-review';
   }
 
   return 'workflow-and-coordination';

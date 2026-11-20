@@ -1,8 +1,9 @@
 {
   "name": "iss-enterprise",
-  "version": "2.0.0",
-  "description": "Multi-stack governance & scaffolding CLI. Detects project archetypes, configures mixed model fleets, compacts skills, and deploys deterministic model hooks with optional Starfleet crew aliases.",
+  "version": "2.1.0",
+  "description": "Intelligent Stack Scaffolding for Enterprise (ISS-Enterprise): Multi-stack governance & scaffolding CLI. Detects project archetypes, configures mixed model fleets, compacts skills, and deploys deterministic model hooks with standard, naval, and private local themes.",
   "main": "src/cli.js",
+  "types": "./types/index.d.ts",
   "type": "module",
   "bin": {
     "iss-enterprise": "./bin/iss.js",
@@ -12,6 +13,7 @@
   "files": [
     "bin",
     "src",
+    "types",
     ".agents",
     "examples",
     "README.md",
@@ -30,14 +32,14 @@
     "doctor": "node ./bin/iss.js doctor",
     "audit": "node ./bin/iss.js doctor",
     "demo": "node ./examples/quickstart-demo.js",
-    "test": "node ./test/suite.js"
+    "test": "node ./test/suite.js",
+    "typecheck": "tsc --noEmit"
   },
   "keywords": [
     "ai-agents",
     "multi-agent",
     "cli",
     "scaffolding",
-    "star-trek",
     "iss-enterprise",
     "claude",
     "deepseek",
@@ -54,5 +56,9 @@
   "license": "MIT",
   "engines": {
     "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2"
   }
 }

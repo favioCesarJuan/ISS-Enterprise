@@ -1,85 +1,53 @@
 # Contributing to ISS-Enterprise
 
-Welcome aboard, Officer! We are thrilled you want to help make **ISS-Enterprise** an even more formidable multi-agent scaffolding and governance dreadnought.
-
-This document outlines the guidelines, invariants, and best practices for contributing to the project.
+Welcome! We appreciate contributions helping make **ISS-Enterprise** (*Intelligent Stack Scaffolding for Enterprise*) a clean, deterministic multi-stack governance CLI.
 
 ---
 
-## 🌟 Core Architectural Invariant: Zero Runtime Dependencies
+## Core Architectural Invariant: Zero Runtime Dependencies
 
-**ISS-Enterprise strictly requires ZERO runtime dependencies.**
+**ISS-Enterprise strictly requires ZERO external runtime dependencies.**
 
-- Every line in `bin/` and `src/` must exclusively utilize Node.js built-in modules (`node:fs`, `node:path`, `node:readline`, `node:child_process`, `node:assert/strict`, `node:os`, etc.).
-- Do **NOT** install or add external npm runtime dependencies (e.g. `chalk`, `commander`, `yargs`, `axios`, `glob`).
-- External frameworks mentioned in the advisor (like Vitest, Playwright, Semgrep, Astro) are tools that ISS-Enterprise **scaffolds and configures for user projects**, never dependencies of ISS-Enterprise itself.
-
-This zero-dependency guarantee ensures:
-1. Instant installation and execution via `pnpm dlx iss-enterprise` or `npx iss-enterprise`.
-2. Total immunity to runtime supply-chain attacks.
-3. Minimalist, audit-friendly codebase.
+- Every line in `bin/` and `src/` must exclusively use Node.js built-in modules (`node:fs`, `node:path`, `node:readline`, `node:child_process`, `node:assert/strict`, `node:os`, etc.).
+- Do **NOT** add external npm runtime dependencies (`dependencies` must stay absent/empty — never add `chalk`, `commander`, `yargs`, `axios`, `glob`).
+- `typescript` and `@types/node` are permitted strictly under **`devDependencies`** for static verification (`pnpm run typecheck` via JSDoc + `checkJs: true` + `types/index.d.ts`). All CLI commands and tests must remain 100% runnable without `pnpm install`.
+- External tools configured for target projects (Vitest, Playwright, Semgrep, Astro, Ruff) remain target project tools, never runtime dependencies of ISS-Enterprise itself.
 
 ---
 
-## 🛠️ Local Development Setup
-
-We strongly recommend using **pnpm** for local development:
+## Local Development Setup
 
 ```bash
-# 1. Clone the repository
 git clone https://github.com/favioCesarJuan/ISS-Enterprise.git
 cd ISS-Enterprise
-
-# 2. Verify Node.js version (>=18.0.0 required)
-node -v
-
-# 3. Run the automated verification suite
-pnpm test
-# Or: node test/suite.js
+node -v             # >= 18.0.0 required
+pnpm test           # or: node ./test/suite.js
+pnpm run typecheck  # after pnpm install: strict tsc --noEmit check
 ```
 
 ---
 
-## 🧪 Testing Guidelines
+## Testing Guidelines
 
 Before submitting any Pull Request:
 
-1. All 15 tests in `test/suite.js` must pass.
-2. If adding support for new frameworks or heuristic detection:
-   - Add corresponding test cases in `test/suite.js`.
-   - Never use absolute file paths in tests (e.g. `/home/user/...`). Use dynamic mock structures created in `os.tmpdir()` to keep tests portable across all operating systems and CI runners.
-
-Run tests locally:
-```bash
-pnpm test
-```
+1. All tests in `test/suite.js`, `node ./bin/iss.js doctor`, and `pnpm run typecheck` (`tsc --noEmit`) must pass cleanly with `0` errors.
+2. Never hardcode absolute local paths in tests or committed fixtures; use `os.tmpdir()` cleanly and clean up temporary folders in `finally` blocks.
+3. Keep all committed files free of third-party trademarks. Keep personal or private theme overrides exclusively outside Git via `.agent-theme.local.json` / `.agents/theme.local.json`.
+4. Keep `.agents/hooks/*` byte-for-byte synchronized with `STNG-framework/.agents/hooks/`.
 
 ---
 
-## 🚀 Proposing Features
-
-### 1. New Archetypes & Heuristic Detections
-- Propose additions to `src/detector.js` if you identify an emerging ecosystem or common pattern (e.g., SvelteKit, Deno, Swift/Vapor).
-- Add heuristic rules to `TECH_KNOWLEDGE_BASE` in `src/advisor.js` to enrich the autonomous investigation engine for unlisted choices (`[Otra / Personalizada]`).
-
-### 2. New Crew Officers or Tactical Roles
-- Roles must adhere to the Star Trek TNG thematic immersion while fulfilling a concrete software engineering or security domain.
-- Define their focus area in `src/fleet-manager.js` and update documentation tables accordingly.
-
----
-
-## 📝 Commit Convention
+## Commit Convention
 
 We follow [Conventional Commits](https://www.conventionalcommits.org/):
-
-- `feat:` A new capability, officer, or detection signature.
-- `fix:` Bug fixes, test repairs, or edge-case handling.
-- `docs:` Documentation improvements or translations.
-- `refactor:` Code restructuring without changing behavior.
-- `test:` Adding or updating tests.
+- `feat:` A new capability, role mapping, or stack signature.
+- `fix:` Bug fixes, edge-case handling, or test repairs.
+- `docs:` Documentation improvements or bilingual parity updates.
+- `refactor:` Clean structural improvements preserving behavior.
+- `test:` Adding or updating verification suites.
 
 ---
 
-## 📄 License
-
-By contributing to ISS-Enterprise, you agree that your contributions will be licensed under the project's [MIT License](LICENSE).
+## License
+By contributing to ISS-Enterprise, you agree that your contributions are licensed under the project's [MIT License](LICENSE).

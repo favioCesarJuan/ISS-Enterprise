@@ -10,6 +10,7 @@
 
 import fs from 'node:fs';
 
+/** @type {Record<string, import('../types/index.d.ts').ModelMetadata>} */
 export const MODEL_REGISTRY = {
   // Google Gemini
   'gemini-2.5-pro': { provider: 'google', context: 1000000, tier: 'HIGH_REASONING', speed: 'MEDIUM' },
@@ -46,8 +47,10 @@ export const PROVIDER_REGISTRY = {
 
 /**
  * Detects available model fleet based on environment keys and local setups.
+ * @returns {import('../types/index.d.ts').FleetProfile}
  */
 export function detectAvailableFleet() {
+  /** @type {string[]} */
   const detected = [];
   if (process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY) detected.push('gemini');
   if (process.env.ANTHROPIC_API_KEY) detected.push('anthropic');
@@ -73,50 +76,118 @@ export function detectAvailableFleet() {
 }
 
 /**
- * Recommends optimal role assignment based on user's available fleet.
- * @param {string[]} availableModels List of model IDs available to user
- * @param {string} dominantProvider Preferred or detected provider
- * @returns {object} Role-to-model mapping with context budgeting rules
+ * Normalizes provider aliases to canonical MODEL_REGISTRY provider keys.
+ * @param {string} provider
+ * @returns {string}
  */
-export function allocateFleet(availableModels = [], dominantProvider = 'anthropic') {
+function normalizeProvider(provider = '') {
+  const p = String(provider).toLowerCase().trim();
+  if (p === 'claude' || p === 'anthropic') return 'anthropic';
+  if (p === 'gemini' || p === 'google') return 'google';
+  if (p === 'ollama' || p === 'qwen' || p === 'local_ollama') return 'qwen';
+  if (p === 'openai' || p === 'gpt') return 'openai';
+  if (p === 'deepseek') return 'deepseek';
+  return p || 'anthropic';
+}
+
+/**
+ * Selects a distinct cross-model reviewer for Zero-Context Cold Review when
+ * multiple providers are available, mitigating same-model self-confirmation bias.
+ * @param {string[]} availableModels
+ * @param {string} authorProvider
+ * @param {string[]} detectedProviders
+ * @param {string} fallbackModel
+ * @returns {{ model: string, crossModel: boolean, provider: string }}
+ */
+function selectCrossModelReviewer(availableModels = [], authorProvider = 'anthropic', detectedProviders = [], fallbackModel = 'claude-3-7-sonnet') {
+  const fromAvailable =
+    availableModels.find(m => MODEL_REGISTRY[m] && MODEL_REGISTRY[m].provider !== authorProvider && MODEL_REGISTRY[m].tier === 'HIGH_REASONING') ||
+    availableModels.find(m => MODEL_REGISTRY[m] && MODEL_REGISTRY[m].provider !== authorProvider && MODEL_REGISTRY[m].tier === 'BALANCED');
+
+  if (fromAvailable) {
+    return {
+      model: fromAvailable,
+      crossModel: true,
+      provider: MODEL_REGISTRY[fromAvailable].provider
+    };
+  }
+
+  for (const rawProv of detectedProviders) {
+    const prov = normalizeProvider(rawProv);
+    if (prov && prov !== authorProvider) {
+      const candidate = getDefaultFleetForProvider(prov)[0];
+      if (candidate) {
+        return {
+          model: candidate,
+          crossModel: true,
+          provider: MODEL_REGISTRY[candidate]?.provider || prov
+        };
+      }
+    }
+  }
+
+  return {
+    model: fallbackModel,
+    crossModel: false,
+    provider: authorProvider
+  };
+}
+
+/**
+ * Recommends optimal role assignment based on user's available fleet.
+ * @param {string[]} [availableModels] List of model IDs available to user
+ * @param {string} [dominantProvider] Preferred or detected provider
+ * @param {{ detectedProviders?: string[] }} [options] Optional routing overrides
+ * @returns {import('../types/index.d.ts').FleetConfig} Role-to-model mapping with context budgeting rules
+ */
+export function allocateFleet(availableModels = [], dominantProvider = 'anthropic', options = {}) {
   // If no explicit models provided, create default based on preferred provider
-  let models = availableModels.length > 0 ? availableModels : getDefaultFleetForProvider(dominantProvider);
+  const models = availableModels.length > 0 ? availableModels : getDefaultFleetForProvider(dominantProvider);
 
   // Classify available models into Reasoning vs Fast Economy
-  let highReasoningModel = models.find(m => MODEL_REGISTRY[m]?.tier === 'HIGH_REASONING') || models[0] || 'claude-3-7-sonnet';
-  let fastEconomyModel = models.find(m => MODEL_REGISTRY[m]?.tier === 'FAST_ECONOMY') || models[models.length - 1] || 'claude-3-5-haiku';
+  const highReasoningModel = models.find(m => MODEL_REGISTRY[m]?.tier === 'HIGH_REASONING') || models[0] || 'claude-3-7-sonnet';
+  const fastEconomyModel = models.find(m => MODEL_REGISTRY[m]?.tier === 'FAST_ECONOMY') || models[models.length - 1] || 'claude-3-5-haiku';
 
+  const authorProvider = MODEL_REGISTRY[highReasoningModel]?.provider || normalizeProvider(dominantProvider);
+  const reviewer = selectCrossModelReviewer(models, authorProvider, options.detectedProviders || [], highReasoningModel);
+
+  /** @type {Record<string, import('../types/index.d.ts').FleetModelAssignment>} */
   const officerRoster = {
     'Human / Product Owner': {
       nature: 'HUMAN',
-      starfleetAlias: 'Captain Jean-Luc Picard',
+      navalAlias: 'Captain',
+      deck: 'BRIDGE',
       model: 'Human User',
       role: 'Strategic direction, requirements, executive sign-off'
     },
     'Lead AI Orchestrator': {
       nature: 'AI_AGENT',
-      starfleetAlias: 'Cmdr. William T. Riker',
+      navalAlias: 'First Officer',
+      deck: 'BRIDGE',
       model: highReasoningModel,
       contextBudget: getContextBudget(highReasoningModel),
       purpose: 'Lead AI orchestrator, task planning, subagent dispatch'
     },
     'Systems & Logic Analyst': {
       nature: 'AI_AGENT',
-      starfleetAlias: 'Lt. Cmdr. Data',
+      navalAlias: 'Science & Logic Officer',
+      deck: 'BRIDGE',
       model: highReasoningModel,
       contextBudget: getContextBudget(highReasoningModel),
       purpose: 'Formal logic, DDD, workspace DAG, mathematical algorithms'
     },
     'Architecture Lead': {
       nature: 'AI_AGENT',
-      starfleetAlias: 'Lt. Cmdr. Geordi La Forge',
+      navalAlias: 'Chief Engineer',
+      deck: 'BRIDGE',
       model: highReasoningModel,
       contextBudget: getContextBudget(highReasoningModel),
       purpose: 'Architecture lead, monorepo boundaries, CI/build pipelines'
     },
     'Security Guardrail': {
       nature: 'AI_AGENT',
-      starfleetAlias: 'Lt. Cmdr. Worf / Lt. Tasha Yar',
+      navalAlias: 'Security Officer',
+      deck: 'BRIDGE',
       model: highReasoningModel,
       fallbackModel: fastEconomyModel,
       contextBudget: getContextBudget(highReasoningModel),
@@ -124,7 +195,8 @@ export function allocateFleet(availableModels = [], dominantProvider = 'anthropi
     },
     'Design System & UX Enforcer': {
       nature: 'AI_AGENT',
-      starfleetAlias: 'Counselor Deanna Troi',
+      navalAlias: 'UX & Comms Officer',
+      deck: 'BRIDGE',
       model: highReasoningModel,
       fallbackModel: fastEconomyModel,
       contextBudget: getContextBudget(highReasoningModel),
@@ -132,25 +204,33 @@ export function allocateFleet(availableModels = [], dominantProvider = 'anthropi
     },
     'Quality & Health Auditor': {
       nature: 'AI_AGENT',
-      starfleetAlias: 'Dr. Beverly Crusher',
+      navalAlias: 'Chief Medical Officer',
+      deck: 'BRIDGE',
       model: highReasoningModel,
       fallbackModel: fastEconomyModel,
       contextBudget: getContextBudget(highReasoningModel),
-      purpose: 'Post-edit policy check, YAGNI minimalism, anti-polling rules'
+      purpose: 'Post-edit policy check, KISS/YAGNI/DRY/SOLID minimalism, anti-polling rules'
     },
     'Test Automation Runner': {
       nature: 'AI_AGENT',
-      starfleetAlias: 'Ensign Wesley Crusher',
+      navalAlias: 'Lower-Deck Runner',
+      deck: 'LOWER_DECK',
       model: fastEconomyModel,
       contextBudget: getContextBudget(fastEconomyModel),
-      purpose: 'Fast script execution, test runners (node --test/Vitest/Pytest)'
+      purpose: 'Stateless script execution, simulation & test runners (node --test/Vitest/Pytest)'
     },
     'Meta-Critic Evaluator': {
       nature: 'META_AGENT',
-      starfleetAlias: 'Q',
-      model: highReasoningModel,
-      contextBudget: getContextBudget(highReasoningModel),
-      purpose: 'Independent meta-critic, edge-case testing, doc-to-code parity'
+      navalAlias: 'Lower-Deck Evaluator',
+      deck: 'LOWER_DECK',
+      model: reviewer.model,
+      paraphraseModel: fastEconomyModel,
+      crossModel: reviewer.crossModel,
+      authorProvider,
+      reviewerProvider: reviewer.provider,
+      isolationMode: 'ZERO_CONTEXT_READ_ONLY',
+      contextBudget: getContextBudget(reviewer.model),
+      purpose: 'Stateless zero-context cold review (Paraphraser, Critic, Verifier), bias detection, doc-to-code parity'
     }
   };
 
@@ -166,18 +246,33 @@ export function allocateFleet(availableModels = [], dominantProvider = 'anthropi
         reasoningCore: 'en',
         ioLanguage: 'auto_detect_mirror',
         zeroTheatricalFiller: true
+      },
+      coldReviewPolicy: {
+        isolationMode: 'ZERO_CONTEXT_READ_ONLY',
+        crossModelActive: reviewer.crossModel,
+        authorProvider,
+        reviewerProvider: reviewer.provider,
+        paraphraseModel: fastEconomyModel,
+        criticModel: reviewer.model,
+        vitalLogicOnly: true
       }
     }
   };
 }
 
+/**
+ * Allocates all governance roles using detected provider list.
+ * @param {string[]} [providers]
+ * @returns {import('../types/index.d.ts').FleetConfig}
+ */
 export function allocateCrewToFleet(providers = []) {
   const provider = providers[0] || 'anthropic';
-  return allocateFleet([], provider);
+  return allocateFleet([], provider, { detectedProviders: providers });
 }
 
 /**
  * Calculates context budgeting directives for a given model.
+ * @param {string} modelId
  */
 function getContextBudget(modelId) {
   const meta = MODEL_REGISTRY[modelId] || { context: 32768 };
@@ -192,6 +287,7 @@ function getContextBudget(modelId) {
   };
 }
 
+/** @param {string} provider @returns {string[]} */
 function getDefaultFleetForProvider(provider) {
   switch (provider.toLowerCase()) {
     case 'anthropic':
@@ -211,13 +307,20 @@ function getDefaultFleetForProvider(provider) {
   }
 }
 
+/** @param {Partial<import('../types/index.d.ts').FleetConfig>} [fleetPlan] @returns {string[]} */
+function collectPlanModels(fleetPlan = {}) {
+  const baseModels = fleetPlan.availableModels || fleetPlan.models || [];
+  const criticModel = fleetPlan.officerRoster?.['Meta-Critic Evaluator']?.model;
+  return criticModel && !baseModels.includes(criticModel) ? [...baseModels, criticModel] : baseModels;
+}
+
 /**
  * Emits .env.fleet.example content with the required API keys based on fleet allocation.
- * @param {object} fleetPlan
+ * @param {Partial<import('../types/index.d.ts').FleetConfig>} [fleetPlan]
  * @returns {string}
  */
 export function generateFleetEnvConfig(fleetPlan = {}) {
-  const models = fleetPlan.models || [];
+  const models = collectPlanModels(fleetPlan);
   const lines = [
     '# ==============================================================================',
     '# 🛸 ISS-ENTERPRISE MULTI-MODEL FLEET CREDENTIALS & ENDPOINTS',
@@ -247,11 +350,12 @@ export function generateFleetEnvConfig(fleetPlan = {}) {
 
 /**
  * Generates an automated shell script to pull local Ollama models assigned to the fleet.
- * @param {object} fleetPlan
+ * @param {Partial<import('../types/index.d.ts').FleetConfig>} [fleetPlan]
  * @returns {string}
  */
 export function generateOllamaPullScript(fleetPlan = {}) {
-  const models = fleetPlan.models || [];
+  const models = collectPlanModels(fleetPlan);
+  /** @type {string[]} */
   const ollamaModels = [];
 
   for (const m of models) {

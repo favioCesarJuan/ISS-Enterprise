@@ -3,7 +3,7 @@
  * 🏗️ ISS-ENTERPRISE: GREENFIELD SCAFFOLDER ENGINE
  * ==============================================================================
  * Builds physical project directory layouts and initial manifests from scratch
- * for brand-new starbases (Monorepos, Atomic Design, APIs, RAG Data Pipelines, Astro, etc.).
+ * for new projects (Monorepos, Atomic Design, APIs, RAG Data Pipelines, Astro, Go, Rust).
  * ==============================================================================
  */
 
@@ -13,13 +13,15 @@ import path from 'node:path';
 /**
  * Scaffolds project directories and starter files based on chosen architecture.
  * @param {string} targetDir
- * @param {object} choices User choices from advisor
+ * @param {import('../types/index.d.ts').ScaffoldOptions} [choices] User choices from advisor
  * @returns {string[]} List of created directories and files
  */
 export function scaffoldGreenfieldProject(targetDir, choices = {}) {
   const root = path.resolve(targetDir);
+  /** @type {string[]} */
   const created = [];
 
+  /** @param {string} sub */
   const mkdir = (sub) => {
     const full = path.join(root, sub);
     if (!fs.existsSync(full)) {
@@ -28,6 +30,7 @@ export function scaffoldGreenfieldProject(targetDir, choices = {}) {
     }
   };
 
+  /** @param {string} sub @param {string} content */
   const writeFile = (sub, content) => {
     const full = path.join(root, sub);
     const parent = path.dirname(full);
@@ -41,18 +44,29 @@ export function scaffoldGreenfieldProject(targetDir, choices = {}) {
   const purpose = choices.project_purpose || choices.purpose || choices.archetype || 'SAAS_MONOREPO';
   const distribution = choices.file_distribution || choices.distribution || '';
   const projectName = choices.projectName || path.basename(root);
+  const safeSlug = projectName.toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '') || 'app';
 
   // 1. Standard Gitignore
-  writeFile('.gitignore', `# Node & Python
+  writeFile('.gitignore', `# Node, Python, Go & Rust
 node_modules/
 __pycache__/
 *.pyc
+target/
+bin/
 .env
 .env.local
 dist/
 build/
 .DS_Store
 *.log
+
+# Agent Runtime & Private Local Themes
+.agents/.env
+.agents/theme.local.json
+.agent-theme.local.json
+.agents/audit_log.json
+.agents/audit_log.md
+.agents/.circuit_state.json
 `);
 
   // 2. Topology Scaffolding
@@ -78,7 +92,7 @@ build/
     writeFile('pnpm-workspace.yaml', `packages:\n  - 'apps/*'\n  - 'packages/*'\n`);
 
     writeFile('packages/shared-types/src/index.ts', `export interface VitalEntity {\n  id: string;\n  createdAt: string;\n}\n`);
-    writeFile('apps/api/src/main.ts', `console.log('🚀 API Service online on Starship Enterprise');\n`);
+    writeFile('apps/api/src/main.ts', `console.log('API Service online for ${projectName}');\n`);
     writeFile('apps/web/src/index.tsx', `export const App = () => <h1>Welcome to ${projectName}</h1>;\n`);
 
   } else if (/atomic/i.test(distribution) || /atomic/i.test(purpose) || /astro|ssg|portal|content/i.test(purpose)) {
@@ -113,6 +127,42 @@ build/
     writeFile('src/layouts/MainLayout.astro', `---\nconst { title } = Astro.props;\n---\n<html lang="es">\n  <head><title>{title}</title></head>\n  <body><slot /></body>\n</html>\n`);
     writeFile('src/components/atoms/Heading.astro', `---\nconst { text } = Astro.props;\n---\n<h1>{text}</h1>\n`);
     writeFile('src/styles/global.css', `/* Global Styles & Design Tokens */\n:root {\n  --color-brand-primary: #1e3a8a;\n}\n`);
+
+  } else if (/\bgo\b|golang/i.test(purpose)) {
+    mkdir('cmd/server');
+    mkdir('internal/core');
+    mkdir('internal/adapters');
+    mkdir('tests');
+
+    writeFile('go.mod', `module ${safeSlug}\n\ngo 1.23\n`);
+    writeFile('cmd/server/main.go', `package main\n\nimport "fmt"\n\nfunc main() {\n\tfmt.Println("${projectName} Go service online.")\n}\n`);
+
+  } else if (/\brust\b|cargo/i.test(purpose)) {
+    mkdir('src/core');
+    mkdir('src/adapters');
+    mkdir('tests');
+
+    writeFile('Cargo.toml', `[package]\nname = "${safeSlug}"\nversion = "0.1.0"\nedition = "2021"\n\n[dependencies]\n`);
+    writeFile('src/main.rs', `fn main() {\n    println!("${projectName} Rust service online.");\n}\n`);
+
+  } else if (/fastapi|django|flask|python.*api|python.*backend/i.test(purpose)) {
+    mkdir('app/api');
+    mkdir('app/core');
+    mkdir('app/services');
+    mkdir('tests');
+
+    writeFile('pyproject.toml', `[project]
+name = "${safeSlug}"
+version = "0.1.0"
+description = "Python Backend API"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn>=0.30.0"
+]
+`);
+    writeFile('app/main.py', `def create_app():
+    return {"service": "${projectName}", "status": "ok"}
+`);
 
   } else if (/data|rag|pipeline/i.test(purpose) || /data|vault/i.test(distribution)) {
     mkdir('ingest');

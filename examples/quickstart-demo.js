@@ -7,6 +7,7 @@
  * 1. Project archetype detection + governance scaffolding in a temp directory.
  * 2. Live pre-tool guard blocking an unsafe command.
  * 3. Governance drift audit (`runGovernanceAudit`) returning clean pass.
+ * Supports `--theme=standard|naval|local`.
  * ==============================================================================
  */
 
@@ -19,16 +20,18 @@ import { buildMcpPlan } from '../src/mcp-engine.js';
 import { generateGovernanceArchitecture } from '../src/generator.js';
 import { runGovernanceAudit } from '../src/auditor.js';
 import { evaluateSecurity } from '../.agents/hooks/pre-tool-shell-guard.js';
+import { resolveTheme, getHookLabel, getZoneName } from '../src/themes.js';
 
-const theme = process.argv.includes('--theme=starfleet') ? 'starfleet' : 'standard';
-if (theme === 'starfleet') {
-  process.env.AGENT_THEME = 'starfleet';
+const explicitThemeArg = process.argv.find(a => a.startsWith('--theme='));
+const theme = resolveTheme(process.argv.slice(2));
+if (explicitThemeArg) {
+  process.env.AGENT_THEME = theme;
 }
 
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'iss-demo-'));
 
 try {
-  console.log(`\n=== ISS-ENTERPRISE QUICKSTART DEMO (theme=${theme}) ===\n`);
+  console.log(`\n=== ${getHookLabel('sim')} ISS-ENTERPRISE QUICKSTART DEMO (theme=${theme}, env=${getZoneName('simBay')}) ===\n`);
 
   // Create sample project fixture
   fs.writeFileSync(path.join(tmpDir, 'package.json'), JSON.stringify({
@@ -57,7 +60,7 @@ try {
   // 3. Doctor Audit
   const audit = runGovernanceAudit(tmpDir);
   console.log(`3. Governance Doctor Audit: ok=${audit.ok} (${audit.passed.length} checks passed, ${audit.failures.length} failures)\n`);
-  console.log('=== DEMO COMPLETE (<1s, 0 external dependencies) ===\n');
+  console.log(`=== ${getHookLabel('sim')} DEMO COMPLETE (<1s, 0 external dependencies) ===\n`);
 } finally {
   fs.rmSync(tmpDir, { recursive: true, force: true });
 }

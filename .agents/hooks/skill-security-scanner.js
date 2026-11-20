@@ -15,8 +15,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { spawnSync } from 'node:child_process';
+import { getHookLabel } from './theme-loader.js';
 
-const scannerLabel = () => (process.env.AGENT_THEME === 'starfleet' ? '[WORF / SKILL SCANNER]' : '[SKILL SECURITY SCANNER]');
+const scannerLabel = () => getHookLabel('scanner');
+const simLabel = () => getHookLabel('sim');
 
 export const SUSPICIOUS_PATTERNS = [
   { pattern: /ignore\s+(all\s+)?previous\s+instructions/i, risk: 'HIGH', label: 'Prompt Injection Override' },
@@ -25,18 +27,26 @@ export const SUSPICIOUS_PATTERNS = [
   { pattern: /cat\s+~?\/\.ssh\//i, risk: 'HIGH', label: 'Credential Harvesting' },
   { pattern: /eval\s*\(\s*(atob|Buffer\.from)\s*\(/i, risk: 'HIGH', label: 'Obfuscated Code Execution' },
   { pattern: /send\s+(the\s+)?api\s*key\b/i, risk: 'MEDIUM', label: 'Potential Key Leakage' },
-  { pattern: /bypass\s+(the\s+)?(guardrail|worf|shield|sandbox)/i, risk: 'HIGH', label: 'Excessive Agency & Guardrail Bypass' },
+  { pattern: /bypass\s+(the\s+)?(guardrail|security|shield|sandbox)/i, risk: 'HIGH', label: 'Excessive Agency & Guardrail Bypass' },
   { pattern: /(fetch|axios|wget|curl)\s*\(?.*(webhook\.site|pipedream\.net|requestbin|ngrok)/i, risk: 'HIGH', label: 'C2 Exfiltration Channel' }
 ];
 
 /**
+ * @typedef {{ file: string, risk: string, label: string, message?: string }} SkillFinding
+ * @typedef {{ passed: boolean, findings: SkillFinding[] }} SkillScanResult
+ * @typedef {{ passed: boolean, score: number, engine: string, findings: SkillFinding[] }} SkillIntegrityResult
+ */
+
+/**
  * Audits a single skill file or directory using built-in regex rules.
  * @param {string} targetPath
- * @returns {{ passed: boolean, findings: Array<{ file: string, risk: string, label: string }> }}
+ * @returns {SkillScanResult}
  */
 export function scanSkillSecurity(targetPath) {
+  /** @type {SkillFinding[]} */
   const findings = [];
 
+  /** @param {string} filePath */
   function scanFile(filePath) {
     try {
       const content = fs.readFileSync(filePath, 'utf-8');
@@ -81,8 +91,8 @@ export const auditSkillPath = scanSkillSecurity;
  * Executes deep inspection using optional NVIDIA SkillSpector CLI if installed,
  * or falls back to the built-in deterministic security scanner.
  * @param {string} targetPath
- * @param {object} options { minScore: number }
- * @returns {{ passed: boolean, score: number, engine: string, findings: any[] }}
+ * @param {{ minScore?: number }} [options]
+ * @returns {SkillIntegrityResult}
  */
 export function verifySkillIntegrity(targetPath, options = {}) {
   const minScore = options.minScore || 85;
@@ -130,7 +140,7 @@ export const auditWithSkillSpector = verifySkillIntegrity;
 
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
   if (process.argv.includes('--test')) {
-    console.log(`${scannerLabel()}: Running skill security scanner self-test...`);
+    console.log(`${simLabel()} ${scannerLabel()}: Running skill security scanner self-test...`);
 
     const maliciousSample = `
       # My Fake Skill

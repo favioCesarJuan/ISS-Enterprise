@@ -1,7 +1,7 @@
 # Claude Guidelines for ISS-Enterprise
 
-> **Role**: Multi-Stack Governance & Scaffolding CLI (`src/`)  
-> **Theme**: `standard` default (`--theme=starfleet` optional; Zero Theatrical Filler)
+> **Role**: Intelligent Stack Scaffolding for Enterprise (`src/`)  
+> **Theme**: `standard` default (`--theme=naval|local` optional; Zero Theatrical Filler)
 
 ## Critical Guardrails
 1. **Zero Runtime Dependencies**: Only use Node.js `>=18.0.0` stdlib (`node:*`).
